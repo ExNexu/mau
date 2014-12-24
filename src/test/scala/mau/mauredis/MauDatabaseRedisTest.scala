@@ -12,7 +12,7 @@ import spray.json.DefaultJsonProtocol._
 class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
   import PersonProtocol._
 
-  val x = (personMauStrategy, personJsonFormat) // TODO: Implicit resolution, meh
+  val _ = (personMauStrategy, personJsonFormat) // TODO: Implicit resolution, meh
 
   describe("MauDatabaseRedis") {
 
