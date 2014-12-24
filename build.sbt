@@ -22,6 +22,7 @@ addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M1" cross CrossVersion
 
 scalacOptions ++= Seq(
   "-unchecked",
+  "-feature",
   "-deprecation",
   "-Ywarn-dead-code",
   "-encoding", "UTF-8"
