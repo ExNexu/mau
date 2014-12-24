@@ -1,9 +1,13 @@
 package mau
 
-trait MauSerializer[T] {
-  def serialize(obj: T): String
+import annotation.implicitNotFound
+
+@implicitNotFound(msg = "Cannot find MauSerializer type class for ${A}")
+trait MauSerializer[A] {
+  def serialize(obj: A): String
 }
 
-trait MauDeSerializer[T] {
-  def deserialize(string: String): T
+@implicitNotFound(msg = "Cannot find MauSerializer type class for ${A}")
+trait MauDeSerializer[A] {
+  def deserialize(string: String): A
 }
