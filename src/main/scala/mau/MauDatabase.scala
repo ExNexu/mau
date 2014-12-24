@@ -31,7 +31,7 @@ trait MauDatabase {
 
   def delete[T <: Model: MauStrategy: JsonReader](id: Id)(implicit ec: ExecutionContext): Future[Int] =
     get(id) flatMap {
-      case (Some(obj)) ⇒ delete(obj)
+      case Some(obj) ⇒ delete(obj)
       case _ ⇒ Future.successful(0)
     }
 
