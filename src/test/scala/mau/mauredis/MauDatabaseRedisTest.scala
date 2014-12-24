@@ -17,12 +17,12 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
   describe("MauDatabaseRedis") {
 
     it("should save and get an object") {
-      val person1 = Person(None, "Thomas")
-      val savedObject = await(mauDatabaseRedis.save(person1))
+      val person = Person(None, "Name")
+      val savedObject = await(mauDatabaseRedis.save(person))
       val id = savedObject.id.get
       val getObject = await(mauDatabaseRedis.get[Person](id))
       Some(savedObject) should be(getObject)
-      person1.name should be(getObject.get.name)
+      person.name should be(getObject.get.name)
     }
 
   }
