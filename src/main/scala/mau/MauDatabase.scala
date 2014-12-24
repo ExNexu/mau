@@ -3,14 +3,11 @@ package mau
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import spray.json.JsonReader
-import spray.json.JsonWriter
-
 trait MauDatabase {
 
   protected implicit def ec: ExecutionContext
 
-  def save[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T] = {
+  def save[T <: Model: MauStrategy: MauSerializer](obj: T): Future[T] = {
     // first delete, then persist, then add to keys
     val deleteOldObj = obj.id.fold(Future.successful(0))(_ ⇒ delete(obj))
 
@@ -27,9 +24,9 @@ trait MauDatabase {
     }
   }
 
-  def get[T <: Model: MauStrategy: JsonReader](id: Id): Future[Option[T]]
+  def get[T <: Model: MauStrategy: MauDeSerializer](id: Id): Future[Option[T]]
 
-  def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key, filterFunc: Option[(T) ⇒ Boolean] = None): Future[List[T]] = {
+  def getKeyContent[T <: Model: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(T) ⇒ Boolean] = None): Future[List[T]] = {
     val pureKeyContent = getPureKeyContent(key)
     filterFunc match {
       case Some(filterFunc) ⇒ pureKeyContent.map(_.filter(filterFunc))
@@ -37,7 +34,7 @@ trait MauDatabase {
     }
   }
 
-  def delete[T <: Model: MauStrategy: JsonReader](id: Id): Future[Int] =
+  def delete[T <: Model: MauStrategy: MauDeSerializer](id: Id): Future[Int] =
     get(id) flatMap {
       case Some(obj) ⇒ delete(obj)
       case _         ⇒ Future.successful(0)
@@ -59,7 +56,7 @@ trait MauDatabase {
         Future.successful(0)
     }
 
-  protected def persist[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T]
+  protected def persist[T <: Model: MauStrategy: MauSerializer](obj: T): Future[T]
 
   protected def remove[T <: Model: MauStrategy](id: Id): Future[Int]
 
@@ -67,7 +64,7 @@ trait MauDatabase {
 
   protected def removeFromKey(id: Id, key: Key): Future[Int]
 
-  protected def getPureKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]]
+  protected def getPureKeyContent[T <: Model: MauStrategy: MauDeSerializer](key: Key): Future[List[T]]
 
 }
 
