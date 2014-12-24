@@ -1,4 +1,4 @@
-package us.bleibinha.mau
+package mau
 
 trait Model {
   def id: Option[Id]

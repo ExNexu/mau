@@ -1,11 +1,11 @@
-package us.bleibinha.mau.redis
+package mau.redis
 
 import scala.concurrent.Future
 
 import redis.RedisClient
 import spray.json.JsonReader
 import spray.json.JsonWriter
-import us.bleibinha.mau._
+import mau._
 
 class MauDatabaseRedis(val client: RedisClient, val namespace: String) extends MauDatabase {
   def save[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T] = ???

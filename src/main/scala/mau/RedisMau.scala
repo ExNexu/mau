@@ -1,4 +1,4 @@
-package us.bleibinha.mau
+package mau
 
 import scala.concurrent.Future
 

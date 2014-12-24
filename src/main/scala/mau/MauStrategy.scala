@@ -1,4 +1,4 @@
-package us.bleibinha.mau
+package mau
 
 // TODO: Require JsonFormat here and remove from MauDatabase
 trait MauStrategy[T <: Model] {
