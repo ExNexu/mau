@@ -29,12 +29,18 @@ trait MauDatabase {
 
   def get[T <: Model: MauStrategy: JsonReader](id: Id): Future[Option[T]]
 
-  def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]]
+  def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key, filterFunc: Option[(T) ⇒ Boolean] = None): Future[List[T]] = {
+    val pureKeyContent = getPureKeyContent(key)
+    filterFunc match {
+      case Some(filterFunc) ⇒ pureKeyContent.map(_.filter(filterFunc))
+      case None             ⇒ pureKeyContent
+    }
+  }
 
   def delete[T <: Model: MauStrategy: JsonReader](id: Id): Future[Int] =
     get(id) flatMap {
       case Some(obj) ⇒ delete(obj)
-      case _ ⇒ Future.successful(0)
+      case _         ⇒ Future.successful(0)
     }
 
   def delete[T <: Model: MauStrategy](obj: T): Future[Int] =
@@ -60,6 +66,8 @@ trait MauDatabase {
   protected def addToKey(id: Id, key: Key): Future[Int]
 
   protected def removeFromKey(id: Id, key: Key): Future[Int]
+
+  protected def getPureKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]]
 
 }
 

@@ -15,8 +15,6 @@ class MauDatabaseRedis(
 
   override def get[T <: Model: MauStrategy: JsonReader](id: Id): Future[Option[T]] = ???
 
-  override def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]] = ???
-
   override protected def persist[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T] = ???
 
   override protected def remove[T <: Model: MauStrategy](id: Id): Future[Int] = ???
@@ -24,6 +22,8 @@ class MauDatabaseRedis(
   override protected def addToKey(id: Id, key: Key): Future[Int] = ???
 
   override protected def removeFromKey(id: Id, key: Key): Future[Int] = ???
+
+  override protected def getPureKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]] = ???
 
 }
 
