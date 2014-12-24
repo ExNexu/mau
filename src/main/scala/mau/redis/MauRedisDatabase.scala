@@ -1,20 +1,27 @@
 package mau.redis
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
+import mau.{ redis ⇒ mauredis, _ }
 import redis.RedisClient
 import spray.json.JsonReader
 import spray.json.JsonWriter
-import mau._
 
 class MauDatabaseRedis(val client: RedisClient, val namespace: String) extends MauDatabase {
-  def save[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T] = ???
 
-  def get[T <: Model: MauStrategy: JsonReader](id: Id): Future[Option[T]] = ???
+  override def get[T <: Model: MauStrategy: JsonReader](id: Id)(implicit ec: ExecutionContext): Future[Option[T]] = ???
 
-  def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]] = ???
+  override def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key)(implicit ec: ExecutionContext): Future[List[T]] = ???
 
-  def delete[T <: Model: MauStrategy: JsonReader](id: Id): Future[Int] = ???
+  override protected def persist[T <: Model: MauStrategy: JsonWriter](obj: T)(implicit ec: ExecutionContext): Future[T] = ???
+
+  override protected def remove[T <: Model: MauStrategy](id: Id)(implicit ec: ExecutionContext): Future[Int] = ???
+
+  override protected def addToKey(id: Id, key: Key)(implicit ec: ExecutionContext): Future[Int] = ???
+
+  override protected def removeFromKey(id: Id, key: Key)(implicit ec: ExecutionContext): Future[Int] = ???
+
 }
 
 object MauDatabaseRedis {
