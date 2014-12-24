@@ -25,6 +25,6 @@ class MauDatabaseRedis(val client: RedisClient, val namespace: String) extends M
 }
 
 object MauDatabaseRedis {
-  def apply(client: RedisClient, namespace: String) =
+  def apply(client: RedisClient, namespace: String): MauDatabase =
     new MauDatabaseRedis(client, namespace)
 }
