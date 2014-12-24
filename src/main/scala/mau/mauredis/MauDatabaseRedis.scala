@@ -1,32 +1,32 @@
 package mau.mauredis
 
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import java.util.UUID
 
 import mau._
 import redis.RedisClient
 
 class MauDatabaseRedis(
   protected val client: RedisClient,
-  protected val namespace: String,
-  override protected implicit val ec: ExecutionContext) extends MauDatabase {
+  protected val namespace: String)(
+    override protected implicit val ec: ExecutionContext) extends MauDatabase {
 
-  override def get[T <: Model: MauStrategy: MauDeSerializer](id: Id): Future[Option[T]] = {
-    val mauStrategy = implicitly[MauStrategy[T]]
+  override def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
     val key = longKeyForId(id, mauStrategy.typeName)
     val string: Future[Option[String]] = client.get[String](key)
     string map { string ⇒
       string map { string ⇒
-        val mauDeSerializer = implicitly[MauDeSerializer[T]]
+        val mauDeSerializer = implicitly[MauDeSerializer[A]]
         mauDeSerializer.deserialize(string)
       }
     }
   }
 
-  override protected def persist[T <: Model: MauStrategy: MauSerializer](obj: T): Future[T] = {
-    val mauStrategy = implicitly[MauStrategy[T]]
-    val mauSerializer = implicitly[MauSerializer[T]]
+  override protected def persist[A <: Model[A]: MauStrategy: MauSerializer](obj: A): Future[A] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+    val mauSerializer = implicitly[MauSerializer[A]]
 
     val id = obj.id.getOrElse(generateId())
     val objWithId = obj.id.fold(obj.withId(id))(_ ⇒ obj)
@@ -37,13 +37,13 @@ class MauDatabaseRedis(
     saveResult map (_ ⇒ objWithId)
   }
 
-  override protected def remove[T <: Model: MauStrategy](id: Id): Future[Int] = ???
+  override protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Int] = ???
 
   override protected def addToKey(id: Id, key: Key): Future[Int] = ???
 
   override protected def removeFromKey(id: Id, key: Key): Future[Int] = ???
 
-  override protected def getPureKeyContent[T <: Model: MauStrategy: MauDeSerializer](key: Key): Future[List[T]] = ???
+  override protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[List[A]] = ???
 
   private def longKey(key: Key, typeName: String) = s"$namespace:$typeName:$key"
 
@@ -55,5 +55,5 @@ class MauDatabaseRedis(
 
 object MauDatabaseRedis {
   def apply(client: RedisClient, namespace: String)(implicit ec: ExecutionContext): MauDatabase =
-    new MauDatabaseRedis(client, namespace, ec)
+    new MauDatabaseRedis(client, namespace)
 }

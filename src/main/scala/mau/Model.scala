@@ -1,6 +1,8 @@
 package mau
 
-trait Model {
+trait Model[A] {
+  self: A ⇒
+
   def id: Option[Id]
-  def withId(id: Id): this.type
+  def withId(id: Id): A
 }
