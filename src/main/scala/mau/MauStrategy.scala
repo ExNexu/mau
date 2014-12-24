@@ -1,6 +1,5 @@
 package mau
 
-// TODO: Require JsonFormat here and remove from MauDatabase
 trait MauStrategy[T <: Model] {
 
   def typeName: String
