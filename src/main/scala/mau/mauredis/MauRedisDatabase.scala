@@ -1,9 +1,9 @@
-package mau.redis
+package mau.mauredis
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-import mau.{ redis ⇒ mauredis, _ }
+import mau._
 import redis.RedisClient
 import spray.json.JsonReader
 import spray.json.JsonWriter
