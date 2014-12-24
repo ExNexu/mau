@@ -3,15 +3,13 @@ package mau.mauredis
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import akka.actor.ActorSystem
 import mau._
 import mau.mauspray._
 import mau.test._
-import redis.RedisClient
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
-class MauDatabaseRedisTest extends MauSpec {
+class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
   import PersonProtocol._
 
   val x = (personMauStrategy, personJsonFormat) // TODO: Implicit resolution, meh
@@ -29,9 +27,6 @@ class MauDatabaseRedisTest extends MauSpec {
 
   }
 
-  implicit val actorSystem = ActorSystem("MauDatabaseRedisTestSystem")
-  val redisClient = RedisClient()
-  val namespace = "Mau:Test:MauDatabaseRedisTest"
   val mauDatabaseRedis = new MauDatabaseRedis(redisClient, namespace) {
     override protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Int] = Future.successful(0)
 
