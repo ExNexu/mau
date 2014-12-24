@@ -8,7 +8,9 @@ import spray.json.JsonWriter
 
 trait MauDatabase {
 
-  def save[T <: Model: MauStrategy: JsonWriter](obj: T)(implicit ec: ExecutionContext): Future[T] = {
+  protected implicit def ec: ExecutionContext
+
+  def save[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T] = {
     // first delete, then persist, then add to keys
     val deleteOldObj = obj.id.fold(Future.successful(0))(_ ⇒ delete(obj))
 
@@ -25,17 +27,17 @@ trait MauDatabase {
     }
   }
 
-  def get[T <: Model: MauStrategy: JsonReader](id: Id)(implicit ec: ExecutionContext): Future[Option[T]]
+  def get[T <: Model: MauStrategy: JsonReader](id: Id): Future[Option[T]]
 
-  def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key)(implicit ec: ExecutionContext): Future[List[T]]
+  def getKeyContent[T <: Model: MauStrategy: JsonReader](key: Key): Future[List[T]]
 
-  def delete[T <: Model: MauStrategy: JsonReader](id: Id)(implicit ec: ExecutionContext): Future[Int] =
+  def delete[T <: Model: MauStrategy: JsonReader](id: Id): Future[Int] =
     get(id) flatMap {
       case Some(obj) ⇒ delete(obj)
       case _ ⇒ Future.successful(0)
     }
 
-  def delete[T <: Model: MauStrategy](obj: T)(implicit ec: ExecutionContext): Future[Int] =
+  def delete[T <: Model: MauStrategy](obj: T): Future[Int] =
     obj.id match {
       case Some(id) ⇒
         // first remove from keys, then remove object
@@ -51,13 +53,13 @@ trait MauDatabase {
         Future.successful(0)
     }
 
-  protected def persist[T <: Model: MauStrategy: JsonWriter](obj: T)(implicit ec: ExecutionContext): Future[T]
+  protected def persist[T <: Model: MauStrategy: JsonWriter](obj: T): Future[T]
 
-  protected def remove[T <: Model: MauStrategy](id: Id)(implicit ec: ExecutionContext): Future[Int]
+  protected def remove[T <: Model: MauStrategy](id: Id): Future[Int]
 
-  protected def addToKey(id: Id, key: Key)(implicit ec: ExecutionContext): Future[Int]
+  protected def addToKey(id: Id, key: Key): Future[Int]
 
-  protected def removeFromKey(id: Id, key: Key)(implicit ec: ExecutionContext): Future[Int]
+  protected def removeFromKey(id: Id, key: Key): Future[Int]
 
 }
 
