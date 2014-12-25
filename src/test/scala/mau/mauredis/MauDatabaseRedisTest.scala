@@ -95,7 +95,7 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       personsWithNameOne2 should be(Nil)
     }
 
-    it("update an index when an object is updated") {
+    it("should update an index when an object is updated") {
       val person = Person(None, "one")
       val savedPerson = await(mauDatabaseRedis.save(person))
       val id = savedPerson.id.get
