@@ -9,7 +9,7 @@ trait MauDatabase {
 
   def save[A <: Model[A]: MauStrategy: MauSerializer](obj: A): Future[A] = {
     // first delete, then persist, then add to keys
-    val deleteOldObj = obj.id.fold(Future.successful(0))(A ⇒ delete(obj))
+    val deleteOldObj = obj.id.fold(Future.successful(0L))(A ⇒ delete(obj))
 
     val persistedObj = deleteOldObj flatMap (A ⇒ persist(obj))
 
@@ -34,13 +34,13 @@ trait MauDatabase {
     }
   }
 
-  def delete[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Int] =
+  def delete[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Long] =
     get(id) flatMap {
       case Some(obj) ⇒ delete(obj)
       case _         ⇒ Future.successful(0)
     }
 
-  def delete[A <: Model[A]: MauStrategy](obj: A): Future[Int] =
+  def delete[A <: Model[A]: MauStrategy](obj: A): Future[Long] =
     obj.id match {
       case Some(id) ⇒
         // first remove from keys, then remove object
@@ -58,7 +58,7 @@ trait MauDatabase {
 
   protected def persist[A <: Model[A]: MauStrategy: MauSerializer](obj: A): Future[A]
 
-  protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Int]
+  protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Long]
 
   protected def addToKey(id: Id, key: Key): Future[Int]
 

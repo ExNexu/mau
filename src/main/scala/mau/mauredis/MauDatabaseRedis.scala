@@ -37,7 +37,13 @@ class MauDatabaseRedis(
     saveResult map (_ ⇒ objWithId)
   }
 
-  override protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Int] = ???
+  override protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Long] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+
+    val key = longKeyForId(id, mauStrategy.typeName)
+
+    client.del(key)
+  }
 
   override protected def addToKey(id: Id, key: Key): Future[Int] = ???
 

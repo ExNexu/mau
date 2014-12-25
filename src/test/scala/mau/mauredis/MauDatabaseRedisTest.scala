@@ -18,18 +18,43 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
 
     it("should save and get an object") {
       val person = Person(None, "Name")
-      val savedObject = await(mauDatabaseRedis.save(person))
-      val id = savedObject.id.get
-      val getObject = await(mauDatabaseRedis.get[Person](id))
-      Some(savedObject) should be(getObject)
-      person.name should be(getObject.get.name)
+      val (savedPerson, readPerson) = saveAndGet(person)
+      Some(savedPerson) should be(readPerson)
+      person.name should be(readPerson.get.name)
+    }
+
+    it("should remove an object") {
+      val person = Person(None, "Name")
+      val (savedPerson, readPerson) = saveAndGet(person)
+      Some(savedPerson) should be(readPerson)
+      val id = savedPerson.id.get
+      val removeResult = await(mauDatabaseRedis.delete(savedPerson))
+      removeResult should be(1L)
+      val readPerson2 = await(mauDatabaseRedis.get[Person](id))
+      readPerson2 should be(None)
+    }
+
+    it("should remove an object by its id") {
+      val person = Person(None, "Name")
+      val (savedPerson, readPerson) = saveAndGet(person)
+      Some(savedPerson) should be(readPerson)
+      val id = savedPerson.id.get
+      val removeResult = await(mauDatabaseRedis.delete(id))
+      removeResult should be(1L)
+      val readPerson2 = await(mauDatabaseRedis.get[Person](id))
+      readPerson2 should be(None)
     }
 
   }
 
-  val mauDatabaseRedis = new MauDatabaseRedis(redisClient, namespace) {
-    override protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Int] = Future.successful(0)
+  private def saveAndGet(person: Person): (Person, Option[Person]) = {
+      val savedPerson = await(mauDatabaseRedis.save(person))
+      val id = savedPerson.id.get
+      val readPerson = await(mauDatabaseRedis.get[Person](id))
+      (savedPerson, readPerson)
+  }
 
+  val mauDatabaseRedis = new MauDatabaseRedis(redisClient, namespace) {
     override protected def addToKey(id: Id, key: Key): Future[Int] = Future.successful(0)
 
     override protected def removeFromKey(id: Id, key: Key): Future[Int] = Future.successful(0)
