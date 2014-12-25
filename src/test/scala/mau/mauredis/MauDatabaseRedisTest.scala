@@ -23,6 +23,11 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       person.name should be(readPerson.get.name)
     }
 
+    it("should handle getting a nonexisting object") {
+      val readPerson = await(mauDatabaseRedis.get[Person]("123"))
+      readPerson should be(None)
+    }
+
     it("should update an object") {
       val person = Person(None, "Name")
       val (savedPerson, readPerson) = saveAndGet(person)
@@ -33,7 +38,7 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       updatedPerson.name should be(readUpdatedPerson.get.name)
     }
 
-    it("should remove an object") {
+    it("should delete an object") {
       val person = Person(None, "Name")
       val (savedPerson, readPerson) = saveAndGet(person)
       Some(savedPerson) should be(readPerson)
@@ -44,7 +49,7 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       readPerson2 should be(None)
     }
 
-    it("should remove an object by its id") {
+    it("should delete an object by its id") {
       val person = Person(None, "Name")
       val (savedPerson, readPerson) = saveAndGet(person)
       Some(savedPerson) should be(readPerson)
@@ -55,12 +60,22 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       readPerson2 should be(None)
     }
 
+    it("should handle deleting a nonexisting object") {
+      val removeResult = await(mauDatabaseRedis.delete("123"))
+      removeResult should be(0L)
+    }
+
     it("should get an object from an index") {
       val person = Person(None, "one")
       val savedPerson = await(mauDatabaseRedis.save(person))
       val id = savedPerson.id.get
       val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
       personsWithNameOne should be(List(savedPerson))
+    }
+
+    it("should handle getting a nonexisting object from an index") {
+      val indexResult = await(mauDatabaseRedis.getKeyContent[Person]("123"))
+      indexResult should be(Nil)
     }
 
     it("should get Nil from an empty index") {
