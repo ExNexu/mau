@@ -18,7 +18,7 @@ trait MauDatabase {
       val mauStrategy = implicitly[MauStrategy[A]]
       val keys = mauStrategy.getKeys(persistedObj)
       keys map { key ⇒
-        addToKey(id, key)
+        addToKey(id, key, mauStrategy.typeName)
       }
       persistedObj
     }
@@ -26,7 +26,7 @@ trait MauDatabase {
 
   def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]]
 
-  def getKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[List[A]] = {
+  def getKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[Seq[A]] = {
     val pureKeyContent = getPureKeyContent(key)
     filterFunc match {
       case Some(filterFunc) ⇒ pureKeyContent.map(_.filter(filterFunc))
@@ -48,7 +48,7 @@ trait MauDatabase {
         val keys = mauStrategy.getKeys(obj)
         val removalFromKeys = Future.sequence(
           keys map (key ⇒
-            removeFromKey(id, key)
+            removeFromKey(id, key, mauStrategy.typeName)
           )
         )
         removalFromKeys flatMap (_ ⇒ remove(id))
@@ -60,11 +60,11 @@ trait MauDatabase {
 
   protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Long]
 
-  protected def addToKey(id: Id, key: Key): Future[Int]
+  protected def addToKey(id: Id, key: Key, typeName: String): Future[Long]
 
-  protected def removeFromKey(id: Id, key: Key): Future[Int]
+  protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Int]
 
-  protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[List[A]]
+  protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[Seq[A]]
 
 }
 

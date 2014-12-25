@@ -14,8 +14,8 @@ class MauDatabaseRedis(
 
   override def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]] = {
     val mauStrategy = implicitly[MauStrategy[A]]
-    val key = longKeyForId(id, mauStrategy.typeName)
-    val string: Future[Option[String]] = client.get[String](key)
+    val redisKey = longKeyForId(id, mauStrategy.typeName)
+    val string: Future[Option[String]] = client.get[String](redisKey)
     string map { string ⇒
       string map { string ⇒
         val mauDeSerializer = implicitly[MauDeSerializer[A]]
@@ -31,25 +31,42 @@ class MauDatabaseRedis(
     val id = obj.id.getOrElse(generateId())
     val objWithId = obj.id.fold(obj.withId(id))(_ ⇒ obj)
     val serializedObj = mauSerializer.serialize(objWithId)
-    val key = longKeyForId(id, mauStrategy.typeName)
+    val redisKey = longKeyForId(id, mauStrategy.typeName)
 
-    val saveResult = client.set(key, serializedObj) // TODO: What does the Boolean mean?
+    val saveResult = client.set(redisKey, serializedObj) // TODO: What does the Boolean mean?
     saveResult map (_ ⇒ objWithId)
   }
 
   override protected def remove[A <: Model[A]: MauStrategy](id: Id): Future[Long] = {
     val mauStrategy = implicitly[MauStrategy[A]]
 
-    val key = longKeyForId(id, mauStrategy.typeName)
+    val redisKey = longKeyForId(id, mauStrategy.typeName)
 
-    client.del(key)
+    client.del(redisKey)
   }
 
-  override protected def addToKey(id: Id, key: Key): Future[Int] = ???
+  override protected def addToKey(id: Id, key: Key, typeName: String): Future[Long] = {
+    val redisKey = longKey(key, typeName)
+    client.sadd(redisKey, id)
+  }
 
-  override protected def removeFromKey(id: Id, key: Key): Future[Int] = ???
+  override protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Int] = ???
 
-  override protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[List[A]] = ???
+  override protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[Seq[A]] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+    val redisKey = longKey(key, mauStrategy.typeName)
+    val ids: Future[Seq[String]] = client.smembers[String](redisKey)
+    val objs: Future[Seq[A]] =
+      ids flatMap { ids ⇒
+        val objOptions = Future.sequence(
+          ids map { id ⇒
+            get[A](id)
+          }
+        )
+        objOptions.map(_.flatten)
+      }
+    objs
+  }
 
   private def longKey(key: Key, typeName: String) = s"$namespace:$typeName:$key"
 

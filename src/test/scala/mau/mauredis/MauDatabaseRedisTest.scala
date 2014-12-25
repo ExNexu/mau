@@ -45,6 +45,21 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       readPerson2 should be(None)
     }
 
+    it("should get an object from an index") {
+      val person = Person(None, "one")
+      val savedPerson = await(mauDatabaseRedis.save(person))
+      val id = savedPerson.id.get
+      val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
+      val personsWithNameTwo = await(mauDatabaseRedis.getKeyContent[Person]("name=two"))
+      personsWithNameOne should be(List(savedPerson))
+      personsWithNameTwo should be(Nil)
+    }
+
+    it("should get Nil from an empty index") {
+      val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
+      personsWithNameOne should be(Nil)
+    }
+
   }
 
   private def saveAndGet(person: Person): (Person, Option[Person]) = {
@@ -55,11 +70,7 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
   }
 
   val mauDatabaseRedis = new MauDatabaseRedis(redisClient, namespace) {
-    override protected def addToKey(id: Id, key: Key): Future[Int] = Future.successful(0)
-
-    override protected def removeFromKey(id: Id, key: Key): Future[Int] = Future.successful(0)
-
-    override protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[List[A]] = Future.successful(Nil)
+    override protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Int] = Future.successful(0)
   }
 
 }
@@ -73,7 +84,8 @@ object PersonProtocol {
 
   implicit object personMauStrategy extends MauStrategy[Person] {
     override val typeName = "Person"
-    override def getKeys(obj: Person): List[Key] = Nil
+    override def getKeys(person: Person): List[Key] =
+      List(s"name=${person.name}")
   }
 }
 
