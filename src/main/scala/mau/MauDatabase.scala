@@ -7,9 +7,9 @@ trait MauDatabase {
 
   protected implicit def ec: ExecutionContext
 
-  def save[A <: Model[A]: MauStrategy: MauSerializer](obj: A): Future[A] = {
+  def save[A <: Model[A]: MauStrategy: MauSerializer: MauDeSerializer](obj: A): Future[A] = {
     // first delete, then persist, then add to keys
-    val deleteOldObj = obj.id.fold(Future.successful(0L))(A ⇒ delete(obj))
+    val deleteOldObj = obj.id.fold(Future.successful(0L))(id ⇒ delete(id))
 
     val persistedObj = deleteOldObj flatMap (A ⇒ persist(obj))
 

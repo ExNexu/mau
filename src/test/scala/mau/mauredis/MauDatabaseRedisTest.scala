@@ -23,6 +23,16 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       person.name should be(readPerson.get.name)
     }
 
+    it("should update an object") {
+      val person = Person(None, "Name")
+      val (savedPerson, readPerson) = saveAndGet(person)
+      Some(savedPerson) should be(readPerson)
+      val updatedPerson = savedPerson.copy(name = "Name2")
+      val (savedUpdatedPerson, readUpdatedPerson) = saveAndGet(updatedPerson)
+      Some(savedUpdatedPerson) should be(readUpdatedPerson)
+      updatedPerson.name should be(readUpdatedPerson.get.name)
+    }
+
     it("should remove an object") {
       val person = Person(None, "Name")
       val (savedPerson, readPerson) = saveAndGet(person)
@@ -58,7 +68,7 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       personsWithNameOne should be(Nil)
     }
 
-    it("should remove an object from an index when it is removed") {
+    it("should remove an object from an index when it is deleted") {
       val person = Person(None, "one")
       val savedPerson = await(mauDatabaseRedis.save(person))
       val id = savedPerson.id.get
@@ -68,6 +78,20 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       removeResult should be(1L)
       val personsWithNameOne2 = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
       personsWithNameOne2 should be(Nil)
+    }
+
+    it("update an index when an object is updated") {
+      val person = Person(None, "one")
+      val savedPerson = await(mauDatabaseRedis.save(person))
+      val id = savedPerson.id.get
+      val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
+      personsWithNameOne should be(List(savedPerson))
+      val updatedPerson = savedPerson.copy(name = "two")
+      val savedUpdatedPerson = await(mauDatabaseRedis.save(updatedPerson))
+      val personsWithNameOne2 = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
+      personsWithNameOne2 should be(Nil)
+      val personsWithNameTwo = await(mauDatabaseRedis.getKeyContent[Person]("name=two"))
+      personsWithNameTwo should be(List(updatedPerson))
     }
 
   }
