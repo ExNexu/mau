@@ -62,7 +62,7 @@ trait MauDatabase {
 
   protected def addToKey(id: Id, key: Key, typeName: String): Future[Long]
 
-  protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Int]
+  protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Long]
 
   protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[Seq[A]]
 

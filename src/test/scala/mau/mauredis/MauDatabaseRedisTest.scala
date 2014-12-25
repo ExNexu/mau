@@ -50,14 +50,24 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       val savedPerson = await(mauDatabaseRedis.save(person))
       val id = savedPerson.id.get
       val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
-      val personsWithNameTwo = await(mauDatabaseRedis.getKeyContent[Person]("name=two"))
       personsWithNameOne should be(List(savedPerson))
-      personsWithNameTwo should be(Nil)
     }
 
     it("should get Nil from an empty index") {
       val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
       personsWithNameOne should be(Nil)
+    }
+
+    it("should remove an object from an index when it is removed") {
+      val person = Person(None, "one")
+      val savedPerson = await(mauDatabaseRedis.save(person))
+      val id = savedPerson.id.get
+      val personsWithNameOne = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
+      personsWithNameOne should be(List(savedPerson))
+      val removeResult = await(mauDatabaseRedis.delete(savedPerson))
+      removeResult should be(1L)
+      val personsWithNameOne2 = await(mauDatabaseRedis.getKeyContent[Person]("name=one"))
+      personsWithNameOne2 should be(Nil)
     }
 
   }
@@ -69,10 +79,7 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       (savedPerson, readPerson)
   }
 
-  val mauDatabaseRedis = new MauDatabaseRedis(redisClient, namespace) {
-    override protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Int] = Future.successful(0)
-  }
-
+  val mauDatabaseRedis = MauDatabaseRedis(redisClient, namespace)
 }
 
 case class Person(id: Option[Id], name: String) extends Model[Person] {

@@ -50,7 +50,10 @@ class MauDatabaseRedis(
     client.sadd(redisKey, id)
   }
 
-  override protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Int] = ???
+  override protected def removeFromKey(id: Id, key: Key, typeName: String): Future[Long] = {
+    val redisKey = longKey(key, typeName)
+    client.srem(redisKey, id)
+  }
 
   override protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[Seq[A]] = {
     val mauStrategy = implicitly[MauStrategy[A]]
