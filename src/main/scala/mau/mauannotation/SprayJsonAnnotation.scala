@@ -1,4 +1,4 @@
-package mau.annotation
+package mau.mauannotation
 
 import scala.annotation.StaticAnnotation
 import scala.language.experimental.macros
