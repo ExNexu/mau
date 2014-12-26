@@ -76,7 +76,6 @@ class mauModelMacro {
       val repositoryVal = createRepositoryVal(deconstructedMauModelClass)
       val companionBodyAddition =
         q"""
-          ..$additionalCompanionImports
           $sprayJsonFormat
           ..$mauSerialization
           $mauStrategy
@@ -85,11 +84,17 @@ class mauModelMacro {
           $repositoryVal
         """
       compDeclOpt.fold(
-        q"object ${className.toTermName} { ..$companionBodyAddition }"
+        q"""
+          object ${className.toTermName} {
+            ..$additionalCompanionImports
+            ..$companionBodyAddition
+          }
+        """
       ) { compDecl ⇒
           val q"object $obj extends ..$bases { ..$body }" = compDecl
           q"""
             object $obj extends ..$bases {
+              ..$additionalCompanionImports
               ..$body
               ..$companionBodyAddition
             }
@@ -123,7 +128,7 @@ class mauModelMacro {
           val applyMethod = q"${className.toTermName}.apply"
           val jsonFormatMethodName = TermName(s"jsonFormat$fieldsLength")
           val jsonFormatMethod = q"$jsonFormatMethodName($applyMethod)"
-          q"private val jsonFormat = $jsonFormatMethod"
+          q"implicit val jsonFormat = $jsonFormatMethod"
         }
       }
     }
