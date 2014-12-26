@@ -49,8 +49,10 @@ class mauModelMacro {
     }
 
     def mauModelRepositoryClass(deconstructedMauModelClass: DeconstructedMauModelClass) = {
+      val className = deconstructedMauModelClass.className
       q"""
-        class Repository {
+        class Repository(val mauDatabase: MauDatabase) {
+          def save(obj: $className) = mauDatabase.save(obj)
         }
       """
     }
