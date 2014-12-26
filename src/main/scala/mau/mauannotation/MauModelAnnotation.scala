@@ -6,13 +6,26 @@ import scala.reflect.macros._
 
 object MauModelMacroInstance extends mauModelMacro
 
-class mauModel(applicationName: String = "Mau") extends StaticAnnotation {
+class mauModel(applicationName: String = "") extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro MauModelMacroInstance.impl
 }
 
 class mauModelMacro {
   def impl(c: blackbox.Context)(annottees: c.Tree*): c.Expr[Any] = {
     import c.universe._
+
+    case class MauInfo(applicationNameOpt: Option[String] = None) {
+      val applicationName = applicationNameOpt.getOrElse("Mau")
+    }
+
+    val mauInfo = {
+      val annotation = c.prefix.tree
+      val q"new mauModel(..$fields)" = annotation
+      fields match {
+        case q"${applicationName: String}" :: Nil if applicationName != "" ⇒ MauInfo(Some(applicationName))
+        case _ ⇒ MauInfo()
+      }
+    }
 
     val additionalCompanionImports =
       q"""
@@ -57,7 +70,7 @@ class mauModelMacro {
       val mauSerialization = createMauSerialization(deconstructedMauModelClass)
       val mauStrategy = createMauStratey(deconstructedMauModelClass)
       val repositoryClass = createRepositoryClass(deconstructedMauModelClass)
-      val mauDatabase = createMauDatabase(deconstructedMauModelClass)
+      val mauDatabase = createMauDatabase(deconstructedMauModelClass, mauInfo)
       val repositoryVal = createRepositoryVal(deconstructedMauModelClass)
       val companionBodyAddition =
         q"""
@@ -82,10 +95,18 @@ class mauModelMacro {
         }
     }
 
+    def getMauInfo(moduleDecl: ModuleDef) = {
+      val q"object $obj extends ..$bases { ..$body }" = moduleDecl
+      val applicationNameOpt = body collectFirst {
+        case q"val applicationName = $applicationName" ⇒ applicationName
+      } map (_.toString)
+      MauInfo(applicationNameOpt)
+    }
+
     def deconstructMauModelClass(classDecl: ClassDef) = {
       try {
         val q"case class $className(..$fields) extends ..$bases { ..$body }" = classDecl
-        DeconstructedMauModelClass(className, fields, bases, body)
+        DeconstructedMauModelClass(null, className, fields, bases, body)
       } catch {
         case _: MatchError ⇒ c.abort(c.enclosingPosition, "Annotation is only supported on a case class")
       }
@@ -135,9 +156,9 @@ class mauModelMacro {
       """
     }
 
-    def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass) = {
+    def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass, mauInfo: MauInfo) = {
       val className = deconstructedMauModelClass.className
-      val applicationName = "Mau" // TODO
+      val applicationName = mauInfo.applicationName
       val actorSystemName = Constant(s"$className-redis-actorSystem")
       val namespace = Constant(applicationName)
       q"""
@@ -151,7 +172,7 @@ class mauModelMacro {
       """
     }
 
-    case class DeconstructedMauModelClass(className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree])
+    case class DeconstructedMauModelClass(annot: Tree, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree])
 
     annottees match {
       case (classDecl: ClassDef) :: Nil ⇒ modifiedDeclaration(classDecl)

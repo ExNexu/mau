@@ -25,4 +25,5 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
   }
 }
 
-@mauModel("MauTest") case class Person(id: Option[Id], name: String, age: Int)
+@mauModel("MauModelAnnotationTest")
+case class Person(id: Option[Id], name: String, age: Int)
