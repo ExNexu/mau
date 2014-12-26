@@ -10,6 +10,8 @@ class mauModel(namespace: String = "") extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro MauModelMacroInstance.impl
 }
 
+class indexed extends StaticAnnotation
+
 class mauModelMacro {
   def impl(c: blackbox.Context)(annottees: c.Tree*): c.Expr[Any] = {
     import c.universe._
@@ -68,7 +70,7 @@ class mauModelMacro {
       val className = deconstructedMauModelClass.className
       val sprayJsonFormat = createSprayJsonFormat(deconstructedMauModelClass)
       val mauSerialization = createMauSerialization(deconstructedMauModelClass)
-      val mauStrategy = createMauStratey(deconstructedMauModelClass)
+      val mauStrategy = createMauStrategy(deconstructedMauModelClass)
       val repositoryClass = createRepositoryClass(deconstructedMauModelClass)
       val mauDatabase = createMauDatabase(deconstructedMauModelClass, mauInfo)
       val repositoryVal = createRepositoryVal(deconstructedMauModelClass)
@@ -132,27 +134,51 @@ class mauModelMacro {
         private val mauDeSerializer = jsonReaderToMauDeSerializer(jsonFormat)
       """
 
-    def createMauStratey(deconstructedMauModelClass: DeconstructedMauModelClass) = {
+    def createMauStrategy(deconstructedMauModelClass: DeconstructedMauModelClass) = {
       val className = deconstructedMauModelClass.className
-      val typeName = Constant(s"$className")
+      val typeName = Constant(className.toString)
+      val indexedFields = deconstructedMauModelClass.indexedFields
+      val keyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
       q"""
-        private object mauStrategy extends MauStrategy[$className] {
+        private object mauStrategy extends ModifiableMauStrategy[$className] {
           override val typeName = $typeName
-          override def getKeys(obj: $className): List[Key] = Nil
+          addKeymethods($keyMethods)
         }
+      """
+    }
+
+    def getKeyMethodForIndexedField(field: ValDef, className: TypeName) = {
+      val fieldName = field.name
+      val fieldNameConstant = Constant(fieldName.toString)
+      q"""
+        (obj: $className) ⇒ List($fieldNameConstant + s"=$${obj.$fieldName.hashCode}")
       """
     }
 
     def createRepositoryClass(deconstructedMauModelClass: DeconstructedMauModelClass) = {
       val className = deconstructedMauModelClass.className
-      // TODO: additional indexes
+      val indexedFields = deconstructedMauModelClass.indexedFields
+      val findMethods = indexedFields map (getFindMethodForIndexedField(_, className))
       q"""
         final class MauRepository private[$className](val mauDatabase: MauDatabase) {
           def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
           def get(id: Id) = mauDatabase.get(id)(mauStrategy, mauDeSerializer)
           def delete(id: Id) = mauDatabase.delete(id)(mauStrategy, mauDeSerializer)
           def delete(obj: $className) = mauDatabase.delete(obj)(mauStrategy)
+          ..$findMethods
         }
+      """
+    }
+
+    def getFindMethodForIndexedField(field: ValDef, className: TypeName) = {
+      val fieldName = field.name
+      val fieldType = field.tpt
+      val fieldNameConstant = Constant(fieldName.toString)
+      val findMethod = TermName(s"findBy${fieldName.toString.capitalize}")
+      val filterMethod = q"Some((potential: $className) ⇒ value.equals(potential.$fieldName))"
+      q"""
+        def $findMethod(value: $fieldType) =
+          mauDatabase.getKeyContent($fieldNameConstant + s"=$${value.hashCode}", $filterMethod)(mauStrategy, mauDeSerializer)
       """
     }
 
@@ -172,7 +198,15 @@ class mauModelMacro {
       """
     }
 
-    case class DeconstructedMauModelClass(annot: Tree, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree])
+    case class DeconstructedMauModelClass(annot: Tree, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree]) {
+      val indexedFields =
+        fields filter { field ⇒
+          field.mods.annotations match {
+            case q"new indexed()" :: _ ⇒ true
+            case _ ⇒ false
+          }
+        }
+    }
 
     annottees match {
       case (classDecl: ClassDef) :: Nil ⇒ modifiedDeclaration(classDecl)

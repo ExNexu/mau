@@ -8,7 +8,7 @@ import mau.test._
 class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
 
   describe("@mauModel annotation") {
-    it("should create a Repository class to allow save, get and delete") {
+    it("should allow to save, get and delete") {
       val personMauRepo = Person.mauRepository
       val person = Person(None, "Hans", 27)
       val savedPerson = await(personMauRepo.save(person))
@@ -22,8 +22,25 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
       val retrievedPerson2 = await(personMauRepo.get(id))
       retrievedPerson2 should be(None)
     }
+
+    describe("@indexed field annotation") {
+      it("should allow to find by value") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val retrievedPeople = await(personMauRepo.findByName("Hans"))
+        retrievedPeople should be(Seq(savedPerson))
+        val retrievedPerson = retrievedPeople(0)
+        retrievedPerson.name should be(person.name)
+        await(personMauRepo.delete(id))
+      }
+    }
   }
 }
 
 @mauModel("MauModelAnnotationTest")
-case class Person(id: Option[Id], name: String, age: Int)
+case class Person(
+  id: Option[Id],
+  @indexed name: String,
+  @indexed age: Int)
