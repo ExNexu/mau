@@ -6,7 +6,7 @@ import scala.reflect.macros._
 
 object MauModelMacroInstance extends mauModelMacro
 
-class mauModel(applicationName: String = "") extends StaticAnnotation {
+class mauModel(namespace: String = "") extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro MauModelMacroInstance.impl
 }
 
@@ -14,15 +14,15 @@ class mauModelMacro {
   def impl(c: blackbox.Context)(annottees: c.Tree*): c.Expr[Any] = {
     import c.universe._
 
-    case class MauInfo(applicationNameOpt: Option[String] = None) {
-      val applicationName = applicationNameOpt.getOrElse("Mau")
+    case class MauInfo(namespaceOpt: Option[String] = None) {
+      val namespace = namespaceOpt.getOrElse("Mau")
     }
 
     val mauInfo = {
       val annotation = c.prefix.tree
       val q"new mauModel(..$fields)" = annotation
       fields match {
-        case q"${applicationName: String}" :: Nil if applicationName != "" ⇒ MauInfo(Some(applicationName))
+        case q"${namespace: String}" :: Nil if namespace != "" ⇒ MauInfo(Some(namespace))
         case _ ⇒ MauInfo()
       }
     }
@@ -97,10 +97,10 @@ class mauModelMacro {
 
     def getMauInfo(moduleDecl: ModuleDef) = {
       val q"object $obj extends ..$bases { ..$body }" = moduleDecl
-      val applicationNameOpt = body collectFirst {
-        case q"val applicationName = $applicationName" ⇒ applicationName
+      val namespaceOpt = body collectFirst {
+        case q"val namespace = $namespace" ⇒ namespace
       } map (_.toString)
-      MauInfo(applicationNameOpt)
+      MauInfo(namespaceOpt)
     }
 
     def deconstructMauModelClass(classDecl: ClassDef) = {
@@ -158,11 +158,11 @@ class mauModelMacro {
 
     def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass, mauInfo: MauInfo) = {
       val className = deconstructedMauModelClass.className
-      val applicationName = mauInfo.applicationName
+      val namespace = mauInfo.namespace
       val actorSystemName = Constant(s"$className-redis-actorSystem")
-      val namespace = Constant(applicationName)
+      val namespaceConstant = Constant(namespace)
       q"""
-        private val mauDatabase = MauDatabaseRedis(RedisClient()(ActorSystem($actorSystemName)), $namespace)
+        private val mauDatabase = MauDatabaseRedis(RedisClient()(ActorSystem($actorSystemName)), $namespaceConstant)
       """
     }
 
