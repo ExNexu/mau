@@ -8,7 +8,7 @@ class indexed extends StaticAnnotation
 
 class allIndex extends StaticAnnotation
 
-class mauModel(namespace: String = "") extends StaticAnnotation {
+class mauModel(namespace: String = "", showGenerated: Boolean = false) extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro MauModelMacroInstance.impl
 }
 

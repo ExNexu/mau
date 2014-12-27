@@ -16,8 +16,16 @@ private[mauannotation] abstract class MauModelMacroImpl extends MauModelMacroCla
   def modifiedDeclaration(classDecl: ClassDef, compDeclOpt: Option[ModuleDef] = None) = {
     val modifiedClassDecl = modifyClass(classDecl)
     val modifiedCompDecl = modifyCompanion(modifiedClassDecl, compDeclOpt)
-    //println(modifiedClassDecl)
-    //println(modifiedCompDecl)
+    if(mauInfo.showGenerated) {
+      println("________________________________________________")
+      println("------------> GENERATED CASE CLASS <------------")
+      println("¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯")
+      println(modifiedClassDecl)
+      println("________________________________________________")
+      println("---------> GENERATED COMPANION OBJECT <---------")
+      println("¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯")
+      println(modifiedCompDecl)
+    }
 
     c.Expr(
       q"""

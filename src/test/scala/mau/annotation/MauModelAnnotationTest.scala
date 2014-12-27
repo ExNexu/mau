@@ -100,7 +100,7 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
   }
 }
 
-@mauModel("MauModelAnnotationTest")
+@mauModel("MauModelAnnotationTest", false)
 @allIndex
 case class Person(
   id: Option[Id],

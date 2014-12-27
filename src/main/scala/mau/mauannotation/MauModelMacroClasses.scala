@@ -13,16 +13,19 @@ private[mauannotation] trait MauModelMacroClasses {
     val q"new mauModel(..$fields)" = annotation
     fields match {
       case q"${ namespace: String }" :: Nil if namespace != "" ⇒ MauInfo(Some(namespace))
+      case q"${ namespace: String }" :: q"${ showGenerated: Boolean }" :: Nil if namespace != "" ⇒ MauInfo(Some(namespace), Some(showGenerated))
+      case q"${ showGenerated: Boolean }" :: Nil ⇒ MauInfo(None, Some(showGenerated))
       case _ ⇒ MauInfo()
     }
   }
 
-  case class MauInfo(namespaceOpt: Option[String] = None) {
+  case class MauInfo(namespaceOpt: Option[String] = None, showGeneratedOpt: Option[Boolean] = None) {
     val namespace = namespaceOpt.getOrElse("Mau")
+    val showGenerated = showGeneratedOpt.getOrElse(false)
   }
 
   case class DeconstructedMauModelClass(mods: Modifiers, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree]) {
-    val hasAllIndex = mods.annotations.collectFirst{ case q"new allIndex()" ⇒ () }.isDefined
+    val hasAllIndex = mods.annotations.collectFirst { case q"new allIndex()" ⇒ () }.isDefined
     val indexedFields =
       fields filter { field ⇒
         field.mods.annotations match {
