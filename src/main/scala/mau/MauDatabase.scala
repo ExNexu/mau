@@ -24,7 +24,25 @@ trait MauDatabase {
     }
   }
 
+  def save[A <: Model[A]: MauStrategy: MauSerializer: MauDeSerializer](seq: Seq[A]): Future[Seq[A]] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+    val mauSerializer = implicitly[MauSerializer[A]]
+    val mauDeSerializer = implicitly[MauDeSerializer[A]]
+    Future.sequence(
+      seq map (save(_)(mauStrategy, mauSerializer, mauDeSerializer))
+    )
+  }
+
   def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]]
+
+  def get[A <: Model[A]: MauStrategy: MauDeSerializer](seq: Seq[Id]): Future[Seq[A]] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+    val mauDeSerializer = implicitly[MauDeSerializer[A]]
+    val seqWithOpts = Future.sequence(
+      seq map (get(_)(mauStrategy, mauDeSerializer))
+    )
+    seqWithOpts.map(_.flatten)
+  }
 
   def getKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[Seq[A]] = {
     val pureKeyContent = getPureKeyContent(key)
@@ -55,6 +73,23 @@ trait MauDatabase {
       case None ⇒
         Future.successful(0)
     }
+
+  def delete[A <: Model[A]: MauStrategy](seq: Seq[A]): Future[Long] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+    val deletedObjCounts = Future.sequence(
+      seq map (delete(_)(mauStrategy))
+    )
+    deletedObjCounts.map(_.sum)
+  }
+
+  def deleteKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[Long] = {
+    val mauStrategy = implicitly[MauStrategy[A]]
+    val keyContent = getKeyContent(key, filterFunc)
+    keyContent flatMap (delete(_)(mauStrategy))
+  }
+
+  def countKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[Int] =
+    getKeyContent(key, filterFunc).map(_.size)
 
   protected def persist[A <: Model[A]: MauStrategy: MauSerializer](obj: A): Future[A]
 
