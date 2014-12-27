@@ -15,6 +15,8 @@ private[mauannotation] trait MauModelMacroRepository {
     val findMethods = indexedFields map (getFindMethodForIndexedField(_, className))
     val deleteMethods = indexedFields map (getDeleteMethodForIndexedField(_, className))
     val countMethods = indexedFields map (getCountMethodForIndexedField(_, className))
+    val findAllMethod = getFindAllMethod(deconstructedMauModelClass, className)
+    val generatedMethods = findAllMethod.toList ::: findMethods ::: deleteMethods ::: countMethods
     q"""
       final class MauRepository private[$className](val mauDatabase: MauDatabase) {
         def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
@@ -25,9 +27,7 @@ private[mauannotation] trait MauModelMacroRepository {
         def delete(obj: $className) = mauDatabase.delete(obj)(mauStrategy)
         def delete(seq: Seq[Id]) = mauDatabase.delete(seq)(mauStrategy, mauDeSerializer)
         def delete(seq: Seq[$className])(implicit d: DummyImplicit) = mauDatabase.delete(seq)(mauStrategy)
-        ..$findMethods
-        ..$deleteMethods
-        ..$countMethods
+        ..$generatedMethods
       }
     """
   }
@@ -44,14 +44,14 @@ private[mauannotation] trait MauModelMacroRepository {
   def getActionMethodForIndexedField(field: ValDef, className: TypeName, actionName: String, mauDatabaseMethodStr: String) = {
     val fieldName = field.name
     val fieldType = field.tpt
-    val fieldNameConstant = Constant(fieldName.toString)
+    val keyForIndexedField = getKeyForIndexedField(fieldName, q"value")
     val actionMethod = TermName(s"${actionName}By${fieldName.toString.capitalize}")
     val filterMethod = q"Some((potential: $className) ⇒ value.equals(potential.$fieldName))"
     val mauDatabaseMethod = TermName(mauDatabaseMethodStr)
     q"""
       def $actionMethod(value: $fieldType) =
         mauDatabase.$mauDatabaseMethod(
-          $fieldNameConstant + s"=$${value.hashCode}",
+          $keyForIndexedField,
           $filterMethod
         )(
           mauStrategy,
@@ -59,6 +59,22 @@ private[mauannotation] trait MauModelMacroRepository {
         )
     """
   }
+
+  def getFindAllMethod(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+    if (deconstructedMauModelClass.hasAllIndex)
+      Some(
+        q"""
+          def findAll =
+            mauDatabase.getKeyContent[$className](
+              $allKey
+            )(
+              mauStrategy,
+              mauDeSerializer
+            )
+        """
+      )
+    else
+      None
 
   def createRepositoryVal(deconstructedMauModelClass: DeconstructedMauModelClass) =
     q"val mauRepository = new MauRepository(mauDatabase)"

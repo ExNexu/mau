@@ -57,10 +57,25 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
         await(personMauRepo.delete(id))
       }
     }
+
+    describe("@allIndex class annotation") {
+      it("should allow to find all instances") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val retrievedPeople = await(personMauRepo.findAll)
+        retrievedPeople should be(Seq(savedPerson))
+        val retrievedPerson = retrievedPeople(0)
+        retrievedPerson.name should be(person.name)
+        await(personMauRepo.delete(id))
+      }
+    }
   }
 }
 
 @mauModel("MauModelAnnotationTest")
+@allIndex
 case class Person(
   id: Option[Id],
   @indexed name: String,

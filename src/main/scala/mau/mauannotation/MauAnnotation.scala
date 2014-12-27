@@ -6,6 +6,8 @@ import scala.reflect.macros._
 
 class indexed extends StaticAnnotation
 
+class allIndex extends StaticAnnotation
+
 class mauModel(namespace: String = "") extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro MauModelMacroInstance.impl
 }

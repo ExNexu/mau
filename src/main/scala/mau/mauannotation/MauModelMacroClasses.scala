@@ -21,7 +21,8 @@ private[mauannotation] trait MauModelMacroClasses {
     val namespace = namespaceOpt.getOrElse("Mau")
   }
 
-  case class DeconstructedMauModelClass(annot: Tree, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree]) {
+  case class DeconstructedMauModelClass(mods: Modifiers, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree]) {
+    val hasAllIndex = mods.annotations.collectFirst{ case q"new allIndex()" ⇒ () }.isDefined
     val indexedFields =
       fields filter { field ⇒
         field.mods.annotations match {
@@ -32,13 +33,10 @@ private[mauannotation] trait MauModelMacroClasses {
   }
 
   object DeconstructedMauModelClass {
-    def apply(classDecl: ClassDef): DeconstructedMauModelClass =
-      try {
-        val q"case class $className(..$fields) extends ..$bases { ..$body }" = classDecl
-        DeconstructedMauModelClass(null, className, fields, bases, body)
-      } catch {
-        case _: MatchError ⇒ c.abort(c.enclosingPosition, "Annotation is only supported on a case class")
-      }
+    def apply(classDecl: ClassDef): DeconstructedMauModelClass = {
+      val q"$mods class $className(..$fields) extends ..$bases { ..$body }" = classDecl
+      DeconstructedMauModelClass(mods, className, fields, bases, body)
+    }
   }
 }
 

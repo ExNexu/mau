@@ -21,6 +21,8 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       import redis.RedisClient
     """
 
+  val allKey = Constant("all")
+
   def modifyCompanion(classDecl: ClassDef, compDeclOpt: Option[ModuleDef]) = {
     val deconstructedMauModelClass = DeconstructedMauModelClass(classDecl)
     val className = deconstructedMauModelClass.className
@@ -82,7 +84,9 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     val className = deconstructedMauModelClass.className
     val typeName = Constant(className.toString)
     val indexedFields = deconstructedMauModelClass.indexedFields
-    val keyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
+    val indexedFieldKeyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
+    val allIndexKeyMethod = getKeyMethodForAllIndex(deconstructedMauModelClass, className)
+    val keyMethods = allIndexKeyMethod.toList ::: indexedFieldKeyMethods
     q"""
       private object mauStrategy extends ModifiableMauStrategy[$className] {
         override val typeName = $typeName
@@ -93,11 +97,22 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
 
   def getKeyMethodForIndexedField(field: ValDef, className: TypeName) = {
     val fieldName = field.name
+    val keyForIndexedField = getKeyForIndexedField(fieldName, q"obj.$fieldName")
+    q"(obj: $className) ⇒ List($keyForIndexedField)"
+  }
+
+  def getKeyForIndexedField(fieldName: TermName, value: RefTree) = {
     val fieldNameConstant = Constant(fieldName.toString)
     q"""
-      (obj: $className) ⇒ List($fieldNameConstant + s"=$${obj.$fieldName.hashCode}")
+      $fieldNameConstant + s"=$${$value.hashCode}"
     """
   }
+
+  def getKeyMethodForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+      if(deconstructedMauModelClass.hasAllIndex)
+        Some(q"(obj: $className) ⇒ List($allKey)")
+      else
+        None
 
   def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass, mauInfo: MauInfo) = {
     val className = deconstructedMauModelClass.className
