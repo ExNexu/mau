@@ -13,10 +13,10 @@ private[mauannotation] trait MauModelMacroClassModifier {
     val basesWithModel = tq"Model[$className]" :: bases
     val withId = q"override def withId(id: Id) = copy(id = Some(id))"
     q"""
-        case class $className(..$fields) extends ..$basesWithModel {
-          ..$body
-          $withId
-        }
-      """
+      case class $className(..$fields) extends ..$basesWithModel {
+        ..$body
+        $withId
+      }
+    """
   }
 }
