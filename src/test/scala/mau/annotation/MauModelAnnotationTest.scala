@@ -59,7 +59,6 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
         val id = savedPerson.id.get
         val countResult = await(personMauRepo.countByName("Hans"))
         countResult should be(1)
-        await(personMauRepo.delete(id))
       }
     }
 
@@ -73,7 +72,6 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
         retrievedPeople should be(Seq(savedPerson))
         val retrievedPerson = retrievedPeople(0)
         retrievedPerson.name should be(person.name)
-        await(personMauRepo.delete(id))
       }
 
       it("should allow to delete all instances") {
@@ -94,15 +92,15 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
         val id = savedPerson.id.get
         val countResult = await(personMauRepo.countAll)
         countResult should be(1)
-        await(personMauRepo.delete(id))
       }
     }
   }
+
+  @mauModel("Mau:Test:MauModelAnnotationTest", false)
+  @allIndex
+  case class Person(
+    id: Option[Id],
+    @indexed name: String,
+    age: Int)
 }
 
-@mauModel("MauModelAnnotationTest", false)
-@allIndex
-case class Person(
-  id: Option[Id],
-  @indexed name: String,
-  age: Int)
