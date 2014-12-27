@@ -99,43 +99,6 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     """
   }
 
-  def createRepositoryClass(deconstructedMauModelClass: DeconstructedMauModelClass) = {
-    val className = deconstructedMauModelClass.className
-    val indexedFields = deconstructedMauModelClass.indexedFields
-    val findMethods = indexedFields map (getFindMethodForIndexedField(_, className))
-    q"""
-      final class MauRepository private[$className](val mauDatabase: MauDatabase) {
-        def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
-        def save(seq: Seq[$className]) = mauDatabase.save(seq)(mauStrategy, mauSerializer, mauDeSerializer)
-        def get(id: Id) = mauDatabase.get(id)(mauStrategy, mauDeSerializer)
-        def get(seq: Seq[Id]) = mauDatabase.get(seq)(mauStrategy, mauDeSerializer)
-        def delete(id: Id) = mauDatabase.delete(id)(mauStrategy, mauDeSerializer)
-        def delete(obj: $className) = mauDatabase.delete(obj)(mauStrategy)
-        def delete(seq: Seq[Id]) = mauDatabase.delete(seq)(mauStrategy, mauDeSerializer)
-        def delete(seq: Seq[$className])(implicit d: DummyImplicit) = mauDatabase.delete(seq)(mauStrategy)
-        ..$findMethods
-      }
-    """
-  }
-
-  def getFindMethodForIndexedField(field: ValDef, className: TypeName) = {
-    val fieldName = field.name
-    val fieldType = field.tpt
-    val fieldNameConstant = Constant(fieldName.toString)
-    val findMethod = TermName(s"findBy${fieldName.toString.capitalize}")
-    val filterMethod = q"Some((potential: $className) ⇒ value.equals(potential.$fieldName))"
-    q"""
-      def $findMethod(value: $fieldType) =
-        mauDatabase.getKeyContent(
-          $fieldNameConstant + s"=$${value.hashCode}",
-          $filterMethod
-        )(
-          mauStrategy,
-          mauDeSerializer
-        )
-    """
-  }
-
   def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass, mauInfo: MauInfo) = {
     val className = deconstructedMauModelClass.className
     val namespace = mauInfo.namespace
@@ -145,7 +108,4 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       private val mauDatabase = MauDatabaseRedis(RedisClient()(ActorSystem($actorSystemName)), $namespaceConstant)
     """
   }
-
-  def createRepositoryVal(deconstructedMauModelClass: DeconstructedMauModelClass) =
-    q"val mauRepository = new MauRepository(mauDatabase)"
 }
