@@ -35,6 +35,27 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
         retrievedPerson.name should be(person.name)
         await(personMauRepo.delete(id))
       }
+
+      it("should allow to delete by value") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val deleteResult = await(personMauRepo.deleteByName("Hans"))
+        deleteResult should be(1)
+        val retrievedPerson = await(personMauRepo.get(id))
+        retrievedPerson should be(None)
+      }
+
+      it("should allow to count by value") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val countResult = await(personMauRepo.countByName("Hans"))
+        countResult should be(1)
+        await(personMauRepo.delete(id))
+      }
     }
   }
 }
