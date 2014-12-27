@@ -19,9 +19,11 @@ private[mauannotation] abstract class MauModelMacroImpl extends MauModelMacroCla
     //println(modifiedClassDecl)
     //println(modifiedCompDecl)
 
-    c.Expr(q"""
+    c.Expr(
+      q"""
         $modifiedClassDecl
         $modifiedCompDecl
-      """)
+      """
+    )
   }
 }
