@@ -12,9 +12,9 @@ class mauModel(namespace: String = "", showGenerated: Boolean = false) extends S
   def macroTransform(annottees: Any*): Any = macro MauModelMacroInstance.impl
 }
 
-object MauModelMacroInstance extends mauModelMacro
+private[mauannotation] object MauModelMacroInstance extends mauModelMacro
 
-class mauModelMacro {
+private[mauannotation] class mauModelMacro {
   def impl(c1: blackbox.Context)(annottees: c1.Tree*): c1.Expr[Any] = {
     val mauModelMacroImpl = new { val c: c1.type = c1 } with MauModelMacroImpl
     mauModelMacroImpl.generate(annottees)
