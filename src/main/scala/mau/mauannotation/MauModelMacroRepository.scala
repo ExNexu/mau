@@ -15,8 +15,8 @@ private[mauannotation] trait MauModelMacroRepository {
     val findMethods = indexedFields map (getFindMethodForIndexedField(_, className))
     val deleteMethods = indexedFields map (getDeleteMethodForIndexedField(_, className))
     val countMethods = indexedFields map (getCountMethodForIndexedField(_, className))
-    val findAllMethod = getFindAllMethod(deconstructedMauModelClass, className)
-    val generatedMethods = findAllMethod.toList ::: findMethods ::: deleteMethods ::: countMethods
+    val allIndexMethods = getAllIndexMethods(deconstructedMauModelClass, className)
+    val generatedMethods = allIndexMethods ::: findMethods ::: deleteMethods ::: countMethods
     q"""
       final class MauRepository private[$className](val mauDatabase: MauDatabase) {
         def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
@@ -60,10 +60,9 @@ private[mauannotation] trait MauModelMacroRepository {
     """
   }
 
-  def getFindAllMethod(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
-    if (deconstructedMauModelClass.hasAllIndex)
-      Some(
-        q"""
+  def getAllIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+    if (deconstructedMauModelClass.hasAllIndex) {
+        val findAll = q"""
           def findAll =
             mauDatabase.getKeyContent[$className](
               $allKey
@@ -72,9 +71,27 @@ private[mauannotation] trait MauModelMacroRepository {
               mauDeSerializer
             )
         """
-      )
-    else
-      None
+        val deleteAll = q"""
+          def deleteAll =
+            mauDatabase.deleteKeyContent[$className](
+              $allKey
+            )(
+              mauStrategy,
+              mauDeSerializer
+            )
+        """
+        val countAll = q"""
+          def countAll =
+            mauDatabase.countKeyContent[$className](
+              $allKey
+            )(
+              mauStrategy,
+              mauDeSerializer
+            )
+        """
+        List(findAll, deleteAll, countAll)
+    } else
+        Nil
 
   def createRepositoryVal(deconstructedMauModelClass: DeconstructedMauModelClass) =
     q"val mauRepository = new MauRepository(mauDatabase)"
