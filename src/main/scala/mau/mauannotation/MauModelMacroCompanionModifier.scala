@@ -26,6 +26,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
   def modifyCompanion(classDecl: ClassDef, compDeclOpt: Option[ModuleDef]) = {
     val deconstructedMauModelClass = DeconstructedMauModelClass(classDecl)
     val className = deconstructedMauModelClass.className
+    val convenientApplyMethod = createConvenientApplyMethod(deconstructedMauModelClass, className)
     val sprayJsonFormat = createSprayJsonFormat(deconstructedMauModelClass)
     val mauSerialization = createMauSerialization(deconstructedMauModelClass)
     val mauStrategy = createMauStrategy(deconstructedMauModelClass)
@@ -34,6 +35,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     val repositoryVal = createRepositoryVal(deconstructedMauModelClass)
     val companionBodyAddition =
       q"""
+        $convenientApplyMethod
         $sprayJsonFormat
         ..$mauSerialization
         $mauStrategy
@@ -58,6 +60,17 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
           }
         """
       }
+  }
+
+  def createConvenientApplyMethod(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) = {
+    val fields = deconstructedMauModelClass.fields
+    val fieldsWithoutId = fields.collect{
+      case q"$mods val $tname: $tpt = $expr" if tname != TermName("id") ⇒ q"val $tname: $tpt = $expr"
+    }
+    val fieldsWithoutIdNames = fieldsWithoutId.map(_.name)
+    q"""
+      def apply(..$fieldsWithoutId): $className = new $className(None, ..$fieldsWithoutIdNames)
+    """
   }
 
   def createSprayJsonFormat(deconstructedMauModelClass: DeconstructedMauModelClass) = {

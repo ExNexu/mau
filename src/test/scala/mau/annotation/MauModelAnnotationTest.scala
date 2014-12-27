@@ -23,6 +23,11 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
       retrievedPerson2 should be(None)
     }
 
+    it("should have a convenient constructor") {
+      val person = Person("Hans", 27)
+      person should be(Person(None, "Hans", 27))
+    }
+
     describe("@indexed field annotation") {
       it("should allow to find by value") {
         val personMauRepo = Person.mauRepository
@@ -100,4 +105,4 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
 case class Person(
   id: Option[Id],
   @indexed name: String,
-  @indexed age: Int)
+  age: Int)
