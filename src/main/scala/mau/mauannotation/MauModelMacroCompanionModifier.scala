@@ -106,9 +106,13 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     q"""
       final class MauRepository private[$className](val mauDatabase: MauDatabase) {
         def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
+        def save(seq: Seq[$className]) = mauDatabase.save(seq)(mauStrategy, mauSerializer, mauDeSerializer)
         def get(id: Id) = mauDatabase.get(id)(mauStrategy, mauDeSerializer)
+        def get(seq: Seq[Id]) = mauDatabase.get(seq)(mauStrategy, mauDeSerializer)
         def delete(id: Id) = mauDatabase.delete(id)(mauStrategy, mauDeSerializer)
         def delete(obj: $className) = mauDatabase.delete(obj)(mauStrategy)
+        def delete(seq: Seq[Id]) = mauDatabase.delete(seq)(mauStrategy, mauDeSerializer)
+        def delete(seq: Seq[$className])(implicit d: DummyImplicit) = mauDatabase.delete(seq)(mauStrategy)
         ..$findMethods
       }
     """
