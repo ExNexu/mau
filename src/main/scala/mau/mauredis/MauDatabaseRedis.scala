@@ -73,7 +73,7 @@ class MauDatabaseRedis(
 
   private def longKey(key: Key, typeName: String) = s"$namespace:$typeName:$key"
 
-  private def longKeyForId(id: Id, typeName: String) = longKey(id, typeName)
+  private def longKeyForId(id: Id, typeName: String) = longKey(s"id:$id", typeName)
 
   private def generateId(): Id = UUID.randomUUID().toString
 
