@@ -1,7 +1,6 @@
 package mau.mauannotation
 
 import scala.reflect.macros._
-import scala.reflect.macros._
 
 private[mauannotation] trait MauModelMacroRepository {
   self: MauModelMacroImpl ⇒
@@ -16,7 +15,8 @@ private[mauannotation] trait MauModelMacroRepository {
     val deleteMethods = indexedFields map (getDeleteMethodForIndexedField(_, className))
     val countMethods = indexedFields map (getCountMethodForIndexedField(_, className))
     val allIndexMethods = getAllIndexMethods(deconstructedMauModelClass, className)
-    val generatedMethods = allIndexMethods ::: findMethods ::: deleteMethods ::: countMethods
+    val compoundIndexMethods = getCompoundIndexMethods(deconstructedMauModelClass, className)
+    val generatedMethods = allIndexMethods ::: compoundIndexMethods ::: findMethods ::: deleteMethods ::: countMethods
     q"""
       final class MauRepository private[$className](val mauDatabase: MauDatabase) {
         def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
@@ -62,7 +62,7 @@ private[mauannotation] trait MauModelMacroRepository {
 
   def getAllIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
     if (deconstructedMauModelClass.hasAllIndex) {
-        val findAll = q"""
+      val findAll = q"""
           def findAll =
             mauDatabase.getKeyContent[$className](
               $allKey
@@ -71,7 +71,7 @@ private[mauannotation] trait MauModelMacroRepository {
               mauDeSerializer
             )
         """
-        val deleteAll = q"""
+      val deleteAll = q"""
           def deleteAll =
             mauDatabase.deleteKeyContent[$className](
               $allKey
@@ -80,7 +80,7 @@ private[mauannotation] trait MauModelMacroRepository {
               mauDeSerializer
             )
         """
-        val countAll = q"""
+      val countAll = q"""
           def countAll =
             mauDatabase.countKeyContent[$className](
               $allKey
@@ -89,9 +89,45 @@ private[mauannotation] trait MauModelMacroRepository {
               mauDeSerializer
             )
         """
-        List(findAll, deleteAll, countAll)
+      List(findAll, deleteAll, countAll)
     } else
-        Nil
+      Nil
+
+  // TODO: Refactor
+  def getCompoundIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) = deconstructedMauModelClass.compoundIndexes flatMap { compoundIndex ⇒
+    val indexName = compoundIndex.name
+    val fields = compoundIndex.fields
+    val argumentFields = fields map deconstructedMauModelClass.getFieldValDef
+    val fieldTermNames = fields.map(fieldName ⇒ TermName(s"$fieldName"))
+    val findByMethodName = TermName(s"findBy$indexName")
+    val valueFields = fields map (field ⇒
+      RefTree(EmptyTree, TermName(field))
+    )
+    val keyForCompoundIndex = getKeyForCompoundIndex(fieldTermNames, valueFields)
+    val filterMethodParts = fieldTermNames.zip(valueFields).map {
+      case (fieldName, valueField) ⇒
+        q"""
+          $valueField.equals(potential.$fieldName)
+        """
+    }
+    val filterMethod = q"""
+        Some(
+          (potential: $className) ⇒
+            List(..$filterMethodParts).filter(_ == false).isEmpty
+        )
+      """
+    val findBy = q"""
+        def $findByMethodName(..$argumentFields) =
+          mauDatabase.getKeyContent[$className](
+            $keyForCompoundIndex,
+            $filterMethod
+          )(
+            mauStrategy,
+            mauDeSerializer
+          )
+      """
+    List(findBy)
+  }
 
   def createRepositoryVal(deconstructedMauModelClass: DeconstructedMauModelClass) =
     q"val mauRepository = new MauRepository(mauDatabase)"

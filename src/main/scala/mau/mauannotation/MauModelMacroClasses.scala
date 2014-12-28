@@ -25,7 +25,9 @@ private[mauannotation] trait MauModelMacroClasses {
   }
 
   case class DeconstructedMauModelClass(mods: Modifiers, className: TypeName, fields: List[ValDef], bases: List[Tree], body: List[Tree]) {
+
     val hasAllIndex = mods.annotations.collectFirst { case q"new allIndex()" ⇒ () }.isDefined
+
     val indexedFields =
       fields filter { field ⇒
         field.mods.annotations match {
@@ -33,6 +35,23 @@ private[mauannotation] trait MauModelMacroClasses {
           case _                     ⇒ false
         }
       }
+
+    val compoundIndexes =
+      mods.annotations.collect {
+        case q"new compoundIndex($indexNameTree, $indexFieldList)" ⇒
+          val q"List(..$indexFieldTrees)" = indexFieldList
+          val indexFields = indexFieldTrees map treeToString
+          val indexName = treeToString(indexNameTree)
+          DeconstructedCompoundIndex(indexName, indexFields)
+      }
+
+    def getFieldValDef(fieldName: String): ValDef =
+      fields.collectFirst {
+        case q"$mods val $tname: $tpt = $expr" if tname.toString == fieldName ⇒ q"val $tname: $tpt = $expr"
+      }.get
+
+    private def treeToString(tree: Tree) = s"$tree".replaceAll("\"", "") // TODO: meh
+
   }
 
   object DeconstructedMauModelClass {
@@ -41,5 +60,7 @@ private[mauannotation] trait MauModelMacroClasses {
       DeconstructedMauModelClass(mods, className, fields, bases, body)
     }
   }
+
+  case class DeconstructedCompoundIndex(name: String, fields: List[String])
 }
 

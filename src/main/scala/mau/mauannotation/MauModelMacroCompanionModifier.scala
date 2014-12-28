@@ -1,7 +1,6 @@
 package mau.mauannotation
 
 import scala.reflect.macros._
-import scala.reflect.macros._
 
 private[mauannotation] trait MauModelMacroCompanionModifier {
   self: MauModelMacroImpl ⇒
@@ -64,7 +63,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
 
   def createConvenientApplyMethod(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) = {
     val fields = deconstructedMauModelClass.fields
-    val fieldsWithoutId = fields.collect{
+    val fieldsWithoutId = fields.collect {
       case q"$mods val $tname: $tpt = $expr" if tname != TermName("id") ⇒ q"val $tname: $tpt = $expr"
     }
     val fieldsWithoutIdNames = fieldsWithoutId.map(_.name)
@@ -99,7 +98,8 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     val indexedFields = deconstructedMauModelClass.indexedFields
     val indexedFieldKeyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
     val allIndexKeyMethod = getKeyMethodForAllIndex(deconstructedMauModelClass, className)
-    val keyMethods = allIndexKeyMethod.toList ::: indexedFieldKeyMethods
+    val compoundIndexKeyMethods = getKeyMethodsForCompoundIndexes(deconstructedMauModelClass, className)
+    val keyMethods = allIndexKeyMethod.toList ::: compoundIndexKeyMethods ::: indexedFieldKeyMethods
     q"""
       private object mauStrategy extends ModifiableMauStrategy[$className] {
         override val typeName = $typeName
@@ -122,10 +122,30 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
   }
 
   def getKeyMethodForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
-      if(deconstructedMauModelClass.hasAllIndex)
-        Some(q"(obj: $className) ⇒ List($allKey)")
-      else
-        None
+    if (deconstructedMauModelClass.hasAllIndex)
+      Some(q"(obj: $className) ⇒ List($allKey)")
+    else
+      None
+
+  def getKeyForCompoundIndex(fieldNames: List[TermName], values: List[RefTree]) = {
+    val fieldNamesAndValues = fieldNames.zip(values)
+    val keys = fieldNamesAndValues map {
+      case (fieldName, value) ⇒
+        getKeyForIndexedField(fieldName, value)
+    }
+    q"""$keys.mkString(":")"""
+  }
+
+  def getKeyMethodsForCompoundIndexes(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+    deconstructedMauModelClass.compoundIndexes map { compoundIndex ⇒
+      val fields = compoundIndex.fields
+      val fieldTermNames = fields.map(fieldName ⇒ TermName(s"$fieldName"))
+      val valueFields = fields map (field ⇒
+        RefTree(q"obj", TermName(field))
+      )
+      val keyForCompoundIndex = getKeyForCompoundIndex(fieldTermNames, valueFields)
+      q"(obj: $className) ⇒ List($keyForCompoundIndex)"
+    }
 
   def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass, mauInfo: MauInfo) = {
     val className = deconstructedMauModelClass.className

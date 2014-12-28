@@ -5,7 +5,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import mau._
 import mau.test._
 
-class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
+class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest", true) {
 
   describe("@mauModel annotation") {
     it("should allow to save, get and delete") {
@@ -94,10 +94,24 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest") {
         countResult should be(1)
       }
     }
+
+    describe("@compoundIndex class annotation") {
+      it("should allow to find by compoundIndex") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val retrievedPeople = await(personMauRepo.findByNameAge("Hans", 27))
+        retrievedPeople should be(Seq(savedPerson))
+        val retrievedPerson = retrievedPeople(0)
+        retrievedPerson.name should be(person.name)
+      }
+    }
   }
 
-  @mauModel("Mau:Test:MauModelAnnotationTest", false)
+  @mauModel("Mau:Test:MauModelAnnotationTest", true)
   @allIndex
+  @compoundIndex("NameAge", List("name", "age"))
   case class Person(
     id: Option[Id],
     @indexed name: String,
