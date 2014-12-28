@@ -2,7 +2,12 @@ package mau.mauannotation
 
 import scala.reflect.macros._
 
-private[mauannotation] abstract class MauModelMacroImpl extends MauModelMacroClasses with MauModelMacroClassModifier with MauModelMacroCompanionModifier with MauModelMacroRepository {
+private[mauannotation] abstract class MauModelMacroImpl
+  extends MauModelMacroClasses
+  with MauModelMacroClassModifier
+  with MauModelMacroCompanionModifier
+  with MauModelMacroRepository {
+
   val c: blackbox.Context
   import c.universe._
 
@@ -16,7 +21,7 @@ private[mauannotation] abstract class MauModelMacroImpl extends MauModelMacroCla
   def modifiedDeclaration(classDecl: ClassDef, compDeclOpt: Option[ModuleDef] = None) = {
     val modifiedClassDecl = modifyClass(classDecl)
     val modifiedCompDecl = modifyCompanion(modifiedClassDecl, compDeclOpt)
-    if(mauInfo.showGenerated) {
+    if (mauInfo.showGenerated) {
       println("________________________________________________")
       println("------------> GENERATED CASE CLASS <------------")
       println("¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯")

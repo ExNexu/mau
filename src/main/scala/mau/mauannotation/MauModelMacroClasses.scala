@@ -12,10 +12,14 @@ private[mauannotation] trait MauModelMacroClasses {
     val annotation = c.prefix.tree
     val q"new mauModel(..$fields)" = annotation
     fields match {
-      case q"${ namespace: String }" :: Nil if namespace != "" ⇒ MauInfo(Some(namespace))
-      case q"${ namespace: String }" :: q"${ showGenerated: Boolean }" :: Nil if namespace != "" ⇒ MauInfo(Some(namespace), Some(showGenerated))
-      case q"${ showGenerated: Boolean }" :: Nil ⇒ MauInfo(None, Some(showGenerated))
-      case _ ⇒ MauInfo()
+      case q"${ namespace: String }" :: Nil if namespace != "" ⇒
+        MauInfo(Some(namespace))
+      case q"${ namespace: String }" :: q"${ showGenerated: Boolean }" :: Nil if namespace != "" ⇒
+        MauInfo(Some(namespace), Some(showGenerated))
+      case q"${ showGenerated: Boolean }" :: Nil ⇒
+        MauInfo(None, Some(showGenerated))
+      case _ ⇒
+        MauInfo()
     }
   }
 
@@ -51,7 +55,6 @@ private[mauannotation] trait MauModelMacroClasses {
       }.get
 
     private def treeToString(tree: Tree) = s"$tree".replaceAll("\"", "") // TODO: meh
-
   }
 
   object DeconstructedMauModelClass {

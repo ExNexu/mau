@@ -14,8 +14,8 @@ private[mauannotation] trait MauModelMacroRepository {
     val findMethods = indexedFields map (getFindMethodForIndexedField(_, className))
     val deleteMethods = indexedFields map (getDeleteMethodForIndexedField(_, className))
     val countMethods = indexedFields map (getCountMethodForIndexedField(_, className))
-    val allIndexMethods = getAllIndexMethods(deconstructedMauModelClass, className)
-    val compoundIndexMethods = getCompoundIndexMethods(deconstructedMauModelClass, className)
+    val allIndexMethods = getAllIndexMethods(deconstructedMauModelClass)
+    val compoundIndexMethods = getCompoundIndexMethods(deconstructedMauModelClass)
     val generatedMethods = allIndexMethods ::: compoundIndexMethods ::: findMethods ::: deleteMethods ::: countMethods
     q"""
       final class MauRepository private[$className](val mauDatabase: MauDatabase) {
@@ -60,8 +60,9 @@ private[mauannotation] trait MauModelMacroRepository {
     """
   }
 
-  def getAllIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+  def getAllIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass) =
     if (deconstructedMauModelClass.hasAllIndex) {
+      val className = deconstructedMauModelClass.className
       val findAll = q"""
           def findAll =
             mauDatabase.getKeyContent[$className](
@@ -93,23 +94,19 @@ private[mauannotation] trait MauModelMacroRepository {
     } else
       Nil
 
-  def getCompoundIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+  def getCompoundIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass) =
     deconstructedMauModelClass.compoundIndexes flatMap { compoundIndex ⇒
       val findMethod =
-        getActionMethodForCompoundIndex(deconstructedMauModelClass, className, compoundIndex, "find", TermName("getKeyContent"))
+        getActionMethodForCompoundIndex(deconstructedMauModelClass, compoundIndex, "find", TermName("getKeyContent"))
       val deleteMethod =
-        getActionMethodForCompoundIndex(deconstructedMauModelClass, className, compoundIndex, "delete", TermName("deleteKeyContent"))
+        getActionMethodForCompoundIndex(deconstructedMauModelClass, compoundIndex, "delete", TermName("deleteKeyContent"))
       val countMethod =
-        getActionMethodForCompoundIndex(deconstructedMauModelClass, className, compoundIndex, "count", TermName("countKeyContent"))
+        getActionMethodForCompoundIndex(deconstructedMauModelClass, compoundIndex, "count", TermName("countKeyContent"))
       List(findMethod, deleteMethod, countMethod)
     }
 
-  def getActionMethodForCompoundIndex(
-    deconstructedMauModelClass: DeconstructedMauModelClass,
-    className: TypeName,
-    compoundIndex: DeconstructedCompoundIndex,
-    actionName: String,
-    mauDatabaseMethod: TermName) = {
+  def getActionMethodForCompoundIndex(deconstructedMauModelClass: DeconstructedMauModelClass, compoundIndex: DeconstructedCompoundIndex, actionName: String, mauDatabaseMethod: TermName) = {
+    val className = deconstructedMauModelClass.className
     val indexName = compoundIndex.name
     val fields = compoundIndex.fields
     val argumentFields = fields map deconstructedMauModelClass.getFieldValDef

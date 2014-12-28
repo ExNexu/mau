@@ -25,7 +25,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
   def modifyCompanion(classDecl: ClassDef, compDeclOpt: Option[ModuleDef]) = {
     val deconstructedMauModelClass = DeconstructedMauModelClass(classDecl)
     val className = deconstructedMauModelClass.className
-    val convenientApplyMethod = createConvenientApplyMethod(deconstructedMauModelClass, className)
+    val convenientApplyMethod = createConvenientApplyMethod(deconstructedMauModelClass)
     val sprayJsonFormat = createSprayJsonFormat(deconstructedMauModelClass)
     val mauSerialization = createMauSerialization(deconstructedMauModelClass)
     val mauStrategy = createMauStrategy(deconstructedMauModelClass)
@@ -61,7 +61,8 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       }
   }
 
-  def createConvenientApplyMethod(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) = {
+  def createConvenientApplyMethod(deconstructedMauModelClass: DeconstructedMauModelClass) = {
+    val className = deconstructedMauModelClass.className
     val fields = deconstructedMauModelClass.fields
     val fieldsWithoutId = fields.collect {
       case q"$mods val $tname: $tpt = $expr" if tname != TermName("id") ⇒ q"val $tname: $tpt = $expr"
@@ -97,8 +98,8 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     val typeName = Constant(className.toString)
     val indexedFields = deconstructedMauModelClass.indexedFields
     val indexedFieldKeyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
-    val allIndexKeyMethod = getKeyMethodForAllIndex(deconstructedMauModelClass, className)
-    val compoundIndexKeyMethods = getKeyMethodsForCompoundIndexes(deconstructedMauModelClass, className)
+    val allIndexKeyMethod = getKeyMethodForAllIndex(deconstructedMauModelClass)
+    val compoundIndexKeyMethods = getKeyMethodsForCompoundIndexes(deconstructedMauModelClass)
     val keyMethods = allIndexKeyMethod.toList ::: compoundIndexKeyMethods ::: indexedFieldKeyMethods
     q"""
       private object mauStrategy extends ModifiableMauStrategy[$className] {
@@ -121,10 +122,11 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     """
   }
 
-  def getKeyMethodForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
-    if (deconstructedMauModelClass.hasAllIndex)
+  def getKeyMethodForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass) =
+    if (deconstructedMauModelClass.hasAllIndex) {
+      val className = deconstructedMauModelClass.className
       Some(q"(obj: $className) ⇒ List($allKey)")
-    else
+    } else
       None
 
   def getKeyForCompoundIndex(fieldNames: List[TermName], values: List[RefTree]) = {
@@ -136,8 +138,9 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     q"""$keys.mkString(":")"""
   }
 
-  def getKeyMethodsForCompoundIndexes(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+  def getKeyMethodsForCompoundIndexes(deconstructedMauModelClass: DeconstructedMauModelClass) =
     deconstructedMauModelClass.compoundIndexes map { compoundIndex ⇒
+      val className = deconstructedMauModelClass.className
       val fields = compoundIndex.fields
       val fieldTermNames = fields.map(fieldName ⇒ TermName(s"$fieldName"))
       val valueFields = fields map (field ⇒
