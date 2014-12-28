@@ -18,7 +18,7 @@ private[mauannotation] trait MauModelMacroRepository {
     val compoundIndexMethods = getCompoundIndexMethods(deconstructedMauModelClass)
     val generatedMethods = allIndexMethods ::: compoundIndexMethods ::: findMethods ::: deleteMethods ::: countMethods
     q"""
-      final class MauRepository private[$className](val mauDatabase: MauDatabase) {
+      class MauRepository private[$className](val mauDatabase: MauDatabase) {
         def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
         def save(seq: Seq[$className]) = mauDatabase.save(seq)(mauStrategy, mauSerializer, mauDeSerializer)
         def get(id: Id) = mauDatabase.get(id)(mauStrategy, mauDeSerializer)
