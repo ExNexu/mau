@@ -106,6 +106,26 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest", true
         val retrievedPerson = retrievedPeople(0)
         retrievedPerson.name should be(person.name)
       }
+
+      it("should allow to delete by compoundIndex") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val deleteResult = await(personMauRepo.deleteByNameAge("Hans", 27))
+        deleteResult should be(1)
+        val retrievedPerson = await(personMauRepo.get(id))
+        retrievedPerson should be(None)
+      }
+
+      it("should allow to count by compoundIndex") {
+        val personMauRepo = Person.mauRepository
+        val person = Person(None, "Hans", 27)
+        val savedPerson = await(personMauRepo.save(person))
+        val id = savedPerson.id.get
+        val countResult = await(personMauRepo.countByNameAge("Hans", 27))
+        countResult should be(1)
+      }
     }
   }
 

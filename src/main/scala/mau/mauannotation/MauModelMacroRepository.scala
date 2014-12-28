@@ -93,40 +93,56 @@ private[mauannotation] trait MauModelMacroRepository {
     } else
       Nil
 
-  // TODO: Refactor
-  def getCompoundIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) = deconstructedMauModelClass.compoundIndexes flatMap { compoundIndex ⇒
+  def getCompoundIndexMethods(deconstructedMauModelClass: DeconstructedMauModelClass, className: TypeName) =
+    deconstructedMauModelClass.compoundIndexes flatMap { compoundIndex ⇒
+      val findMethod =
+        getActionMethodForCompoundIndex(deconstructedMauModelClass, className, compoundIndex, "find", TermName("getKeyContent"))
+      val deleteMethod =
+        getActionMethodForCompoundIndex(deconstructedMauModelClass, className, compoundIndex, "delete", TermName("deleteKeyContent"))
+      val countMethod =
+        getActionMethodForCompoundIndex(deconstructedMauModelClass, className, compoundIndex, "count", TermName("countKeyContent"))
+      List(findMethod, deleteMethod, countMethod)
+    }
+
+  def getActionMethodForCompoundIndex(
+    deconstructedMauModelClass: DeconstructedMauModelClass,
+    className: TypeName,
+    compoundIndex: DeconstructedCompoundIndex,
+    actionName: String,
+    mauDatabaseMethod: TermName) = {
     val indexName = compoundIndex.name
     val fields = compoundIndex.fields
     val argumentFields = fields map deconstructedMauModelClass.getFieldValDef
     val fieldTermNames = fields.map(fieldName ⇒ TermName(s"$fieldName"))
-    val findByMethodName = TermName(s"findBy$indexName")
+    val actionMethodName = TermName(s"${actionName}By$indexName")
     val valueFields = fields map (field ⇒
       RefTree(EmptyTree, TermName(field))
     )
     val keyForCompoundIndex = getKeyForCompoundIndex(fieldTermNames, valueFields)
-    val filterMethodParts = fieldTermNames.zip(valueFields).map {
-      case (fieldName, valueField) ⇒
-        q"""
-          $valueField.equals(potential.$fieldName)
-        """
-    }
-    val filterMethod = q"""
-        Some(
-          (potential: $className) ⇒
-            List(..$filterMethodParts).filter(_ == false).isEmpty
+    val filterMethod = getFilterMethodForCompoundIndexMethods(className, fieldTermNames, valueFields)
+    q"""
+      def $actionMethodName(..$argumentFields) =
+        mauDatabase.$mauDatabaseMethod[$className](
+          $keyForCompoundIndex,
+          $filterMethod
+        )(
+          mauStrategy,
+          mauDeSerializer
         )
-      """
-    val findBy = q"""
-        def $findByMethodName(..$argumentFields) =
-          mauDatabase.getKeyContent[$className](
-            $keyForCompoundIndex,
-            $filterMethod
-          )(
-            mauStrategy,
-            mauDeSerializer
-          )
-      """
-    List(findBy)
+    """
+  }
+
+  def getFilterMethodForCompoundIndexMethods(className: TypeName, fieldTermNames: List[TermName], valueFields: List[RefTree]) = {
+    val filterMethodEvidenceParts = valueFields.zip(fieldTermNames).map {
+      case (valueField, fieldName) ⇒
+        q"$valueField.equals(potential.$fieldName)"
+    }
+    q"""
+      Some(
+        (potential: $className) ⇒
+          List(..$filterMethodEvidenceParts).filter(_ == false).isEmpty
+      )
+    """
   }
 
   def createRepositoryVal(deconstructedMauModelClass: DeconstructedMauModelClass) =
