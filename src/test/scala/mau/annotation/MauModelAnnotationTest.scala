@@ -137,4 +137,3 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest", true
     @indexed name: String,
     age: Int)
 }
-

@@ -22,4 +22,3 @@ private[mauannotation] class mauModelMacro {
     mauModelMacroImpl.generate(annottees)
   }
 }
-

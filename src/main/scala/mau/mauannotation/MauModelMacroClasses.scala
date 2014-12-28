@@ -66,4 +66,3 @@ private[mauannotation] trait MauModelMacroClasses {
 
   case class DeconstructedCompoundIndex(name: String, fields: List[String])
 }
-

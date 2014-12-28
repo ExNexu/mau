@@ -134,4 +134,3 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
     }
   }
 }
-

@@ -111,4 +111,3 @@ trait MauDatabase {
   protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[Seq[A]]
 
 }
-
