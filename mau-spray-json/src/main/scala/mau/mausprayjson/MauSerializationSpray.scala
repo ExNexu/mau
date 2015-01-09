@@ -1,4 +1,4 @@
-package mau.mauspray
+package mau.mausprayjson
 
 import mau._
 import spray.json.JsonParser

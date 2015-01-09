@@ -13,7 +13,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       import spray.json._
       import spray.json.DefaultJsonProtocol._
       import mau._
-      import mau.mauspray._
+      import mau.mausprayjson._
       import mau.mauredis._
 
       import akka.actor.ActorSystem
@@ -48,8 +48,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
           ..$additionalCompanionImports
           ..$companionBodyAddition
         }
-      """
-    ) { compDecl ⇒
+      """) { compDecl ⇒
         val q"object $obj extends ..$bases { ..$body }" = compDecl
         q"""
           object $obj extends ..$bases {
@@ -144,8 +143,7 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       val fields = compoundIndex.fields
       val fieldTermNames = fields.map(fieldName ⇒ TermName(s"$fieldName"))
       val valueFields = fields map (field ⇒
-        RefTree(q"obj", TermName(field))
-      )
+        RefTree(q"obj", TermName(field)))
       val keyForCompoundIndex = getKeyForCompoundIndex(fieldTermNames, valueFields)
       q"(obj: $className) ⇒ List($keyForCompoundIndex)"
     }

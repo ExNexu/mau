@@ -113,8 +113,7 @@ private[mauannotation] trait MauModelMacroRepository {
     val fieldTermNames = fields.map(fieldName ⇒ TermName(s"$fieldName"))
     val actionMethodName = TermName(s"${actionName}By$indexName")
     val valueFields = fields map (field ⇒
-      RefTree(EmptyTree, TermName(field))
-    )
+      RefTree(EmptyTree, TermName(field)))
     val keyForCompoundIndex = getKeyForCompoundIndex(fieldTermNames, valueFields)
     val filterMethod = getFilterMethodForCompoundIndexMethods(className, fieldTermNames, valueFields)
     q"""

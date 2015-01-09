@@ -4,7 +4,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 import mau._
-import mau.mauspray._
+import mau.mausprayjson._
 import mau.test._
 import spray.json._
 import spray.json.DefaultJsonProtocol._

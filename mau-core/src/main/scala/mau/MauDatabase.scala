@@ -29,8 +29,7 @@ trait MauDatabase {
     val mauSerializer = implicitly[MauSerializer[A]]
     val mauDeSerializer = implicitly[MauDeSerializer[A]]
     Future.sequence(
-      seq map (save(_)(mauStrategy, mauSerializer, mauDeSerializer))
-    )
+      seq map (save(_)(mauStrategy, mauSerializer, mauDeSerializer)))
   }
 
   def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]]
@@ -39,8 +38,7 @@ trait MauDatabase {
     val mauStrategy = implicitly[MauStrategy[A]]
     val mauDeSerializer = implicitly[MauDeSerializer[A]]
     val seqWithOpts = Future.sequence(
-      seq map (get(_)(mauStrategy, mauDeSerializer))
-    )
+      seq map (get(_)(mauStrategy, mauDeSerializer)))
     seqWithOpts.map(_.flatten)
   }
 
@@ -66,9 +64,7 @@ trait MauDatabase {
         val keys = mauStrategy.getKeys(obj)
         val removalFromKeys = Future.sequence(
           keys map (key ⇒
-            removeFromKey(id, key, mauStrategy.typeName)
-          )
-        )
+            removeFromKey(id, key, mauStrategy.typeName)))
         removalFromKeys flatMap (_ ⇒ remove(id))
       case None ⇒
         Future.successful(0)
@@ -78,16 +74,14 @@ trait MauDatabase {
     val mauStrategy = implicitly[MauStrategy[A]]
     val mauDeSerializer = implicitly[MauDeSerializer[A]]
     val deletedObjCounts = Future.sequence(
-      seq map (delete(_)(mauStrategy, mauDeSerializer))
-    )
+      seq map (delete(_)(mauStrategy, mauDeSerializer)))
     deletedObjCounts.map(_.sum)
   }
 
   def delete[A <: Model[A]: MauStrategy](seq: Seq[A]): Future[Long] = {
     val mauStrategy = implicitly[MauStrategy[A]]
     val deletedObjCounts = Future.sequence(
-      seq map (delete(_)(mauStrategy))
-    )
+      seq map (delete(_)(mauStrategy)))
     deletedObjCounts.map(_.sum)
   }
 
