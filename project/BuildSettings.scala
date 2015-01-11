@@ -30,7 +30,41 @@ object BuildSettings {
   )
 
   lazy val mauModuleSettings =
-    basicSettings ++ formatSettings
+    basicSettings ++
+    formatSettings ++
+    seq(
+      // publishing
+      credentials += Credentials(Path.userHome / ".ivy2" / ".us-bleibinha-snapshots-credentials"),
+      credentials += Credentials(Path.userHome / ".ivy2" / ".us-bleibinha-releases-credentials"),
+      credentials += Credentials(Path.userHome / ".ivy2" / ".us-bleibinha-internal-credentials"),
+      publishMavenStyle := true,
+      publishArtifact in Test := false,
+      publishTo := {
+        val archiva = "http://bleibinha.us/archiva/repository/"
+        Some("internal" at archiva + "internal")
+      },
+      pomIncludeRepository := { _ => false },
+      pomExtra :=
+        <scm>
+          <url>https://github.com/ExNexu/mau</url>
+          <connection>scm:git:git@github.com:ExNexu/mau.git</connection>
+        </scm>
+        <developers>
+          <developer>
+            <id>exnexu</id>
+            <name>Stefan Bleibinhaus</name>
+            <url>http://bleibinha.us</url>
+          </developer>
+        </developers>
+    )
+
+  lazy val noPublishing = seq(
+    publish := (),
+    publishLocal := (),
+    // required until these tickets are closed https://github.com/sbt/sbt-pgp/issues/42,
+    // https://github.com/sbt/sbt-pgp/issues/36
+    publishTo := None
+  )
 
   lazy val formatSettings = SbtScalariform.scalariformSettings ++ Seq(
     ScalariformKeys.preferences in Compile := formattingPreferences,

@@ -17,6 +17,7 @@ object Build extends Build {
   lazy val root = Project("root", file("."))
     .aggregate(mauTest, mauCore, mauRedis, mauSprayJson, mauAnnotation)
     .settings(basicSettings: _*)
+    .settings(noPublishing: _*)
 
   // -------------------------------------------------------------------------------------------------------------------
   // Modules
