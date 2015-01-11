@@ -5,7 +5,7 @@ import sbt.Keys._
 
 object BuildSettings {
   val VERSION = "0.0.1-SNAPSHOT"
-  val SCALAVERSION = "2.11.4"
+  val SCALAVERSION = "2.11.5"
 
   lazy val basicSettings = seq(
     version := VERSION,
