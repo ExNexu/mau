@@ -19,14 +19,16 @@ private[mauannotation] trait MauModelMacroRepository {
     val generatedMethods = allIndexMethods ::: compoundIndexMethods ::: findMethods ::: deleteMethods ::: countMethods
     q"""
       class MauRepository private[$className](val mauDatabase: MauDatabase) {
-        def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer)
-        def save(seq: Seq[$className]) = mauDatabase.save(seq)(mauStrategy, mauSerializer, mauDeSerializer)
+        import scala.reflect.ClassTag
+        private val classTag = implicitly[ClassTag[$className]]
+        def save(obj: $className) = mauDatabase.save(obj)(mauStrategy, mauSerializer, mauDeSerializer, classTag)
+        def save(seq: Seq[$className]) = mauDatabase.save(seq)(mauStrategy, mauSerializer, mauDeSerializer, classTag)
         def get(id: Id) = mauDatabase.get(id)(mauStrategy, mauDeSerializer)
         def get(seq: Seq[Id]) = mauDatabase.get(seq)(mauStrategy, mauDeSerializer)
         def delete(id: Id) = mauDatabase.delete(id)(mauStrategy, mauDeSerializer)
-        def delete(obj: $className) = mauDatabase.delete(obj)(mauStrategy)
+        def delete(obj: $className) = mauDatabase.delete(obj)(mauStrategy, mauDeSerializer)
         def delete(seq: Seq[Id]) = mauDatabase.delete(seq)(mauStrategy, mauDeSerializer)
-        def delete(seq: Seq[$className])(implicit d: DummyImplicit) = mauDatabase.delete(seq)(mauStrategy)
+        def delete(seq: Seq[$className])(implicit d: DummyImplicit) = mauDatabase.delete(seq)(mauStrategy, mauDeSerializer, d)
         ..$generatedMethods
       }
     """

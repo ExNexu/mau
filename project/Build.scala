@@ -32,6 +32,10 @@ object Build extends Build {
   lazy val mauCore = Project("mau-core", file("mau-core"))
     .dependsOn(mauTest % "test")
     .settings(mauModuleSettings: _*)
+    .settings(
+      libraryDependencies ++=
+        compile(akkaActorLocking)
+    )
 
   lazy val mauRedis = Project("mau-redis", file("mau-redis"))
     .dependsOn(

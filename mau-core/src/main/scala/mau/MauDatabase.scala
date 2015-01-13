@@ -1,35 +1,55 @@
 package mau
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.reflect.ClassTag
+
+import akka.actor.ActorSystem
+import akka.pattern.ask
+import akka.util.Timeout
+import us.bleibinha.akka.actor.locking.LockActor
+import us.bleibinha.akka.actor.locking.LockActor._
 
 trait MauDatabase {
 
-  protected implicit def ec: ExecutionContext
+  protected implicit def actorSystem: ActorSystem
+  protected implicit val ec: ExecutionContext = actorSystem.dispatcher
+  protected val timeoutDuration = 45 seconds
+  protected implicit val timeout = Timeout(timeoutDuration)
+  protected val lockActor = LockActor(timeoutDuration)
+  private val dummyImplicit = new DummyImplicit()
 
-  def save[A <: Model[A]: MauStrategy: MauSerializer: MauDeSerializer](obj: A): Future[A] = {
+  def save[A <: Model[A]: MauStrategy: MauSerializer: MauDeSerializer: ClassTag](obj: A): Future[A] = {
     // first delete, then persist, then add to keys
-    val deleteOldObj = obj.id.fold(Future.successful(0L))(id ⇒ delete(id))
+    val action = () ⇒ {
+      val deleteOldObj = obj.id.fold(Future.successful(0L))(id ⇒ unsafeDelete(id))
 
-    val persistedObj = deleteOldObj flatMap (A ⇒ persist(obj))
+      val persistedObj = deleteOldObj flatMap (A ⇒ persist(obj))
 
-    persistedObj map { persistedObj ⇒
-      val id = persistedObj.id.get
-      val mauStrategy = implicitly[MauStrategy[A]]
-      val keys = mauStrategy.getKeys(persistedObj)
-      keys map { key ⇒
-        addToKey(id, key, mauStrategy.typeName)
+      persistedObj flatMap { persistedObj ⇒
+        val id = persistedObj.id.get
+        val mauStrategy = implicitly[MauStrategy[A]]
+        val keys = mauStrategy.getKeys(persistedObj)
+        val keysFuture = Future.sequence(
+          keys map { key ⇒
+            addToKey(id, key, mauStrategy.typeName)
+          }
+        )
+        keysFuture map (_ ⇒ persistedObj)
       }
-      persistedObj
     }
+    obj.id.fold(action.apply)(id ⇒ lockActor.ask(LockAwareRequest(id, action)).mapTo[A])
   }
 
-  def save[A <: Model[A]: MauStrategy: MauSerializer: MauDeSerializer](seq: Seq[A]): Future[Seq[A]] = {
+  def save[A <: Model[A]: MauStrategy: MauSerializer: MauDeSerializer: ClassTag](seq: Seq[A]): Future[Seq[A]] = {
     val mauStrategy = implicitly[MauStrategy[A]]
     val mauSerializer = implicitly[MauSerializer[A]]
     val mauDeSerializer = implicitly[MauDeSerializer[A]]
+    val classTag = implicitly[ClassTag[A]]
     Future.sequence(
-      seq map (save(_)(mauStrategy, mauSerializer, mauDeSerializer)))
+      seq map (save(_)(mauStrategy, mauSerializer, mauDeSerializer, classTag))
+    )
   }
 
   def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]]
@@ -38,7 +58,8 @@ trait MauDatabase {
     val mauStrategy = implicitly[MauStrategy[A]]
     val mauDeSerializer = implicitly[MauDeSerializer[A]]
     val seqWithOpts = Future.sequence(
-      seq map (get(_)(mauStrategy, mauDeSerializer)))
+      seq map (get(_)(mauStrategy, mauDeSerializer))
+    )
     seqWithOpts.map(_.flatten)
   }
 
@@ -50,22 +71,15 @@ trait MauDatabase {
     }
   }
 
-  def delete[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Long] =
-    get(id) flatMap {
-      case Some(obj) ⇒ delete(obj)
-      case _         ⇒ Future.successful(0)
-    }
+  def delete[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Long] = {
+    val action = () ⇒ { unsafeDelete(id) }
+    lockActor.ask(LockAwareRequest(id, action)).mapTo[Long]
+  }
 
-  def delete[A <: Model[A]: MauStrategy](obj: A): Future[Long] =
+  def delete[A <: Model[A]: MauStrategy: MauDeSerializer](obj: A): Future[Long] =
     obj.id match {
       case Some(id) ⇒
-        // first remove from keys, then remove object
-        val mauStrategy = implicitly[MauStrategy[A]]
-        val keys = mauStrategy.getKeys(obj)
-        val removalFromKeys = Future.sequence(
-          keys map (key ⇒
-            removeFromKey(id, key, mauStrategy.typeName)))
-        removalFromKeys flatMap (_ ⇒ remove(id))
+        delete(id)
       case None ⇒
         Future.successful(0)
     }
@@ -74,21 +88,23 @@ trait MauDatabase {
     val mauStrategy = implicitly[MauStrategy[A]]
     val mauDeSerializer = implicitly[MauDeSerializer[A]]
     val deletedObjCounts = Future.sequence(
-      seq map (delete(_)(mauStrategy, mauDeSerializer)))
+      seq map (delete(_)(mauStrategy, mauDeSerializer))
+    )
     deletedObjCounts.map(_.sum)
   }
 
-  def delete[A <: Model[A]: MauStrategy](seq: Seq[A]): Future[Long] = {
-    val mauStrategy = implicitly[MauStrategy[A]]
+  def delete[A <: Model[A]](seq: Seq[A])(implicit mauStrategy: MauStrategy[A], mauDeSerializer: MauDeSerializer[A], di: DummyImplicit): Future[Long] = {
     val deletedObjCounts = Future.sequence(
-      seq map (delete(_)(mauStrategy)))
+      seq map (delete(_)(mauStrategy, mauDeSerializer))
+    )
     deletedObjCounts.map(_.sum)
   }
 
   def deleteKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[Long] = {
     val mauStrategy = implicitly[MauStrategy[A]]
+    val mauDeSerializer = implicitly[MauDeSerializer[A]]
     val keyContent = getKeyContent(key, filterFunc)
-    keyContent flatMap (delete(_)(mauStrategy))
+    keyContent flatMap (delete(_)(mauStrategy, mauDeSerializer, dummyImplicit))
   }
 
   def countKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key, filterFunc: Option[(A) ⇒ Boolean] = None): Future[Int] =
@@ -104,4 +120,17 @@ trait MauDatabase {
 
   protected def getPureKeyContent[A <: Model[A]: MauStrategy: MauDeSerializer](key: Key): Future[Seq[A]]
 
+  private def unsafeDelete[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Long] =
+    get(id) flatMap {
+      case Some(obj) ⇒
+        // first remove from keys, then remove object
+        val mauStrategy = implicitly[MauStrategy[A]]
+        val keys = mauStrategy.getKeys(obj)
+        val removalFromKeys = Future.sequence(
+          keys map (key ⇒
+            removeFromKey(id, key, mauStrategy.typeName))
+        )
+        removalFromKeys flatMap (_ ⇒ remove(id))
+      case _ ⇒ Future.successful(0)
+    }
 }

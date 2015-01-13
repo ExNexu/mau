@@ -4,13 +4,14 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
+import akka.actor.ActorSystem
 import mau._
 import redis.RedisClient
 
 class MauDatabaseRedis(
-    protected val client: RedisClient,
-    protected val namespace: String)(
-        override protected implicit val ec: ExecutionContext) extends MauDatabase {
+  protected val client: RedisClient,
+  protected val namespace: String)(
+    override protected implicit val actorSystem: ActorSystem) extends MauDatabase {
 
   override def get[A <: Model[A]: MauStrategy: MauDeSerializer](id: Id): Future[Option[A]] = {
     val mauStrategy = implicitly[MauStrategy[A]]
@@ -64,7 +65,8 @@ class MauDatabaseRedis(
         val objOptions = Future.sequence(
           ids map { id ⇒
             get[A](id)
-          })
+          }
+        )
         objOptions.map(_.flatten)
       }
     objs
@@ -79,6 +81,6 @@ class MauDatabaseRedis(
 }
 
 object MauDatabaseRedis {
-  def apply(client: RedisClient, namespace: String)(implicit ec: ExecutionContext): MauDatabase =
+  def apply(client: RedisClient, namespace: String)(implicit actorSystem: ActorSystem): MauDatabase =
     new MauDatabaseRedis(client, namespace)
 }
