@@ -74,9 +74,21 @@ object BuildSettings {
   import scalariform.formatter.preferences._
   def formattingPreferences =
     FormattingPreferences()
-      .setPreference(RewriteArrowSymbols, true)
       .setPreference(AlignParameters, true)
+      .setPreference(CompactStringConcatenation, false)
+      .setPreference(IndentPackageBlocks, true)
+      .setPreference(FormatXml, true)
+      .setPreference(PreserveSpaceBeforeArguments, false)
+      .setPreference(DoubleIndentClassDeclaration, false)
+      .setPreference(RewriteArrowSymbols, true)
       .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(DoubleIndentClassDeclaration, true)
+      .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 40)
+      .setPreference(SpaceBeforeColon, false)
+      .setPreference(SpaceInsideBrackets, false)
+      .setPreference(SpaceInsideParentheses, false)
+      .setPreference(PreserveDanglingCloseParenthesis, true)
+      .setPreference(IndentSpaces, 2)
+      .setPreference(IndentLocalDefs, false)
+      .setPreference(SpacesWithinPatternBinders, true)
 }
 
