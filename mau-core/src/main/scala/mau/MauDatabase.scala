@@ -8,8 +8,7 @@ import scala.reflect.ClassTag
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import us.bleibinha.akka.actor.locking.LockActor
-import us.bleibinha.akka.actor.locking.LockActor._
+import us.bleibinha.akka.actor.locking._
 
 trait MauDatabase {
 

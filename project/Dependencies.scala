@@ -4,7 +4,7 @@ object Dependencies {
 
   val resolutionRepos = Seq(
     "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/",
-    "bleibinha.us/archiva snapshots" at "http://bleibinha.us/archiva/repository/snapshots"
+    "bleibinha.us/archiva releases" at "http://bleibinha.us/archiva/repository/releases"
   )
 
   def compile(deps: ModuleID*): Seq[ModuleID] = deps map (_ % "compile")
@@ -17,5 +17,5 @@ object Dependencies {
   val sprayJson = "io.spray" %% "spray-json" % "1.3.1"
   val scalaTest = "org.scalatest" %% "scalatest" % "2.2.1"
   val akka = "com.typesafe.akka" %% "akka-actor" % "2.3.8"
-  val akkaActorLocking = "us.bleibinha" %% "akka-actor-locking" % "0.0.2-SNAPSHOT"
+  val akkaActorLocking = "us.bleibinha" %% "akka-actor-locking" % "0.0.3"
 }
