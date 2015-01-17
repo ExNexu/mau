@@ -20,7 +20,7 @@ private[mauannotation] object MauModelMacroInstance extends mauModelMacro
 
 private[mauannotation] class mauModelMacro {
   def impl(c1: blackbox.Context)(annottees: c1.Tree*): c1.Expr[Any] = {
-    val mauModelMacroImpl = new { val c: c1.type = c1 } with MauModelMacroImpl
+    val mauModelMacroImpl = new { val c: c1.type = c1 } with MacroImpl
     mauModelMacroImpl.generate(annottees)
   }
 }

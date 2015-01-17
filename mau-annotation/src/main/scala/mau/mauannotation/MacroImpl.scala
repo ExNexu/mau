@@ -2,11 +2,11 @@ package mau.mauannotation
 
 import scala.reflect.macros._
 
-private[mauannotation] abstract class MauModelMacroImpl
-  extends MauModelMacroClasses
-  with MauModelMacroClassModifier
-  with MauModelMacroCompanionModifier
-  with MauModelMacroRepository {
+private[mauannotation] abstract class MacroImpl
+  extends ClassDeconstructor
+  with ClassModifier
+  with CompanionModifier
+  with MauRepositoryCreator {
 
   val c: blackbox.Context
   import c.universe._

@@ -5,7 +5,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import mau._
 import mau.test._
 
-class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest", true) {
+class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
 
   describe("@mauModel annotation") {
     it("should allow to save, get and delete") {
@@ -129,7 +129,7 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest", true
     }
   }
 
-  @mauModel("Mau:Test:MauModelAnnotationTest", true)
+  @mauModel("Mau:Test:SimpleAnnotationTest", true)
   @sprayJson
   @allIndex
   @compoundIndex("NameAge", List("name", "age"))

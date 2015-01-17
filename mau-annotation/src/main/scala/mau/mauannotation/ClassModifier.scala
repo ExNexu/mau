@@ -2,8 +2,8 @@ package mau.mauannotation
 
 import scala.reflect.macros._
 
-private[mauannotation] trait MauModelMacroClassModifier {
-  self: MauModelMacroImpl ⇒
+private[mauannotation] trait ClassModifier {
+  self: MacroImpl ⇒
 
   val c: blackbox.Context
   import c.universe._
