@@ -2,16 +2,23 @@ package mau.mauannotation
 
 import scala.reflect.macros._
 
-private[mauannotation] trait MauModelMacroCompanionModifier {
+private[mauannotation] trait MauModelMacroCompanionModifier extends MacroHelper {
   self: MauModelMacroImpl ⇒
 
   val c: blackbox.Context
   import c.universe._
 
-  val additionalCompanionImports =
+  def createCompanionImports(sprayJson: Boolean) = {
+    val sprayJsonImports =
+      if (sprayJson)
+        q"""
+        import spray.json._
+        import spray.json.DefaultJsonProtocol._
+      """
+      else
+        emptyQQuote
     q"""
-      import spray.json._
-      import spray.json.DefaultJsonProtocol._
+      ..$sprayJsonImports
       import mau._
       import mau.mausprayjson._
       import mau.mauredis._
@@ -19,14 +26,16 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       import akka.actor.ActorSystem
       import redis.RedisClient
     """
+  }
 
   val allKey = Constant("all")
 
   def modifyCompanion(classDecl: ClassDef, compDeclOpt: Option[ModuleDef]) = {
     val deconstructedMauModelClass = DeconstructedMauModelClass(classDecl)
     val className = deconstructedMauModelClass.className
+    val hasSprayJson = deconstructedMauModelClass.hasSprayJson
+    val additionalCompanionImports = createCompanionImports(hasSprayJson)
     val convenientApplyMethod = createConvenientApplyMethod(deconstructedMauModelClass)
-    val sprayJsonFormat = createSprayJsonFormat(deconstructedMauModelClass)
     val mauSerialization = createMauSerialization(deconstructedMauModelClass)
     val mauStrategy = createMauStrategy(deconstructedMauModelClass)
     val repositoryClass = createRepositoryClass(deconstructedMauModelClass)
@@ -35,7 +44,6 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     val companionBodyAddition =
       q"""
         $convenientApplyMethod
-        $sprayJsonFormat
         ..$mauSerialization
         $mauStrategy
         $repositoryClass
@@ -72,6 +80,17 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
     """
   }
 
+  def createMauSerialization(deconstructedMauModelClass: DeconstructedMauModelClass) =
+    if (deconstructedMauModelClass.hasSprayJson) {
+      val sprayJsonFormat = createSprayJsonFormat(deconstructedMauModelClass)
+      q"""
+        ..$sprayJsonFormat
+        private val mauSerializer = jsonWriterToMauSerializer(jsonFormat)
+        private val mauDeSerializer = jsonReaderToMauDeSerializer(jsonFormat)
+      """
+    } else
+      emptyQQuote
+
   def createSprayJsonFormat(deconstructedMauModelClass: DeconstructedMauModelClass) = {
     val fieldsLength = deconstructedMauModelClass.fields.length
     val className = deconstructedMauModelClass.className
@@ -85,12 +104,6 @@ private[mauannotation] trait MauModelMacroCompanionModifier {
       }
     }
   }
-
-  def createMauSerialization(deconstructedMauModelClass: DeconstructedMauModelClass) =
-    q"""
-      private val mauSerializer = jsonWriterToMauSerializer(jsonFormat)
-      private val mauDeSerializer = jsonReaderToMauDeSerializer(jsonFormat)
-    """
 
   def createMauStrategy(deconstructedMauModelClass: DeconstructedMauModelClass) = {
     val className = deconstructedMauModelClass.className

@@ -130,6 +130,7 @@ class MauModelAnnotationTest extends MauRedisSpec("MauModelAnnotationTest", true
   }
 
   @mauModel("Mau:Test:MauModelAnnotationTest", true)
+  @sprayJson
   @allIndex
   @compoundIndex("NameAge", List("name", "age"))
   case class Person(

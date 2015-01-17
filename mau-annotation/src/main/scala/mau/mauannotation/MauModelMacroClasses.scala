@@ -32,6 +32,8 @@ private[mauannotation] trait MauModelMacroClasses {
 
     val hasAllIndex = mods.annotations.collectFirst { case q"new allIndex()" ⇒ () }.isDefined
 
+    val hasSprayJson = mods.annotations.collectFirst { case q"new sprayJson()" ⇒ () }.isDefined
+
     val indexedFields =
       fields filter { field ⇒
         field.mods.annotations match {
