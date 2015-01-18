@@ -114,7 +114,7 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
     val indexedFieldKeyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
     val allIndexKeyMethod = getKeyMethodForAllIndex(deconstructedMauModelClass)
     val compoundIndexKeyMethods = getKeyMethodsForCompoundIndexes(deconstructedMauModelClass)
-    val keyMethods = allIndexKeyMethod.toList ::: compoundIndexKeyMethods ::: indexedFieldKeyMethods
+    val keyMethods = allIndexKeyMethod.toSet ++ compoundIndexKeyMethods ++ indexedFieldKeyMethods
     q"""
       private object mauStrategy extends ModifiableMauStrategy[$className] {
         override val typeName = $typeName
@@ -126,7 +126,7 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
   def getKeyMethodForIndexedField(field: ValDef, className: TypeName) = {
     val fieldName = field.name
     val keyForIndexedField = getKeyForIndexedField(fieldName, q"obj.$fieldName")
-    q"(obj: $className) ⇒ List($keyForIndexedField)"
+    q"(obj: $className) ⇒ Set($keyForIndexedField)"
   }
 
   def getKeyForIndexedField(fieldName: TermName, value: RefTree) = {
@@ -139,7 +139,7 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
   def getKeyMethodForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass) =
     if (deconstructedMauModelClass.hasAllIndex) {
       val className = deconstructedMauModelClass.className
-      Some(q"(obj: $className) ⇒ List($allKey)")
+      Some(q"(obj: $className) ⇒ Set($allKey)")
     } else
       None
 
@@ -160,7 +160,7 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
       val valueFields = fields map (field ⇒
         RefTree(q"obj", TermName(field)))
       val keyForCompoundIndex = getKeyForCompoundIndex(fieldTermNames, valueFields)
-      q"(obj: $className) ⇒ List($keyForCompoundIndex)"
+      q"(obj: $className) ⇒ Set($keyForCompoundIndex)"
     }
 
   def createMauDatabase(deconstructedMauModelClass: DeconstructedMauModelClass, mauInfo: MauInfo) = {

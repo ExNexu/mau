@@ -139,8 +139,8 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
 
     implicit object personMauStrategy extends MauStrategy[Person] {
       override val typeName = "Person"
-      override def getKeys(person: Person): List[Key] =
-        List(s"name=${person.name}")
+      override def getKeys(person: Person): Set[Key] =
+        Set(s"name=${person.name}")
     }
   }
 }
