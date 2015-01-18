@@ -60,6 +60,16 @@ class MauDatabaseRedisTest extends MauRedisSpec("MauDatabaseRedisTest") {
       readPerson2 should be(None)
     }
 
+    it("should allow to save, delete and save again an object") {
+      val person = Person(None, "Name")
+      val (savedPerson, readPerson) = saveAndGet(person)
+      val id = savedPerson.id.get
+      val removeResult = await(mauDatabaseRedis.delete(id))
+      removeResult should be(1L)
+      val (savedPerson2, readPerson2) = saveAndGet(savedPerson)
+      Some(savedPerson2) should be(readPerson2)
+    }
+
     it("should handle deleting a nonexisting object") {
       val removeResult = await(mauDatabaseRedis.delete("123"))
       removeResult should be(0L)
