@@ -1,7 +1,6 @@
 package mau.mauannotation
 
 import scala.reflect.macros._
-import scala.reflect.macros._
 
 private[mauannotation] trait ClassModifier extends MacroHelper {
   self: MacroImpl ⇒
