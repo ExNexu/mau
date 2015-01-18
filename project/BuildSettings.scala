@@ -1,5 +1,6 @@
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import aether.Aether._
 import sbt._
 import sbt.Keys._
 
@@ -32,6 +33,7 @@ object BuildSettings {
   lazy val mauModuleSettings =
     basicSettings ++
     formatSettings ++
+    aetherPublishSettings ++
     seq(
       // publishing
       credentials += Credentials(Path.userHome / ".ivy2" / ".us-bleibinha-snapshots-credentials"),
