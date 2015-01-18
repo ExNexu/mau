@@ -35,10 +35,9 @@ private[mauannotation] trait ClassDeconstructor extends MacroHelper {
     val hasSprayJson = mods.annotations.collectFirst { case q"new sprayJson()" ⇒ () }.isDefined
 
     val indexedFields =
-      fields filter { field ⇒
-        field.mods.annotations match {
-          case q"new indexed()" :: _ ⇒ true
-          case _                     ⇒ false
+      fields flatMap { field ⇒
+        field.mods.annotations.collect {
+          case q"new indexed()" ⇒ field
         }
       }
 
