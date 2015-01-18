@@ -24,6 +24,16 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
       val retrievedSecondOwner = await(car.secondOwner)
       retrievedSecondOwner should be(Some(secondOwner))
     }
+
+    it("should be able to be indexed") {
+      val personMauRepo = Person.mauRepository
+      val owner = await(personMauRepo.save(Person("Hans")))
+      val car = Car("BMW", owner.id.get, None)
+      val carMauRepo = Car.mauRepository
+      val savedCar = await(carMauRepo.save(car))
+      val retrievedCar = await(carMauRepo.findByOwnerId(owner.id.get))
+      retrievedCar should be(List(savedCar))
+    }
   }
 
   @mauModel("Mau:Test:AttributeAnnotationTest", true)
@@ -31,7 +41,8 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
   case class Car(
     id: Option[Id],
     name: String,
-    @attribute("Person") ownerId: Id,
+    //@attribute("Person")@indexed ownerId: Id,
+    @indexed @attribute("Person") ownerId: Id,
     @attribute("Person") secondOwnerId: Option[Id])
 
   @mauModel("Mau:Test:AttributeAnnotationTest", true)

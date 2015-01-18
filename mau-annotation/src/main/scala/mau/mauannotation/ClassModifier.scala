@@ -61,11 +61,9 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
 
   def getAttributeFields(fields: List[ValDef]) =
     fields flatMap { field ⇒
-      field.mods.annotations match {
-        case q"new attribute($className)" :: _ ⇒
-          Some(AttributedField(field, className.asInstanceOf[Literal]))
-        case _ ⇒
-          None
+      field.mods.annotations.collect {
+        case q"new attribute($className)" ⇒
+          AttributedField(field, className.asInstanceOf[Literal])
       }
     }
 
