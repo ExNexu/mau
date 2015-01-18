@@ -24,7 +24,7 @@ trait MauDatabase {
     val action = () ⇒ {
       val deleteOldObj = obj.id.fold(Future.successful(0L))(id ⇒ unsafeDelete(id))
 
-      val persistedObj = deleteOldObj flatMap (A ⇒ persist(obj))
+      val persistedObj = deleteOldObj flatMap (_ ⇒ persist(obj))
 
       persistedObj flatMap { persistedObj ⇒
         val id = persistedObj.id.get
