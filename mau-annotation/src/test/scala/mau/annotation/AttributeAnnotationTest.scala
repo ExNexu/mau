@@ -33,8 +33,6 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     name: String,
     @attribute("Person") ownerId: Id,
     @attribute("Person") secondOwnerId: Option[Id])
-  // Person needs to be a MauModel, automatically indexed!?
-  // need constructor with (name, person) // returns Future[Car], saves person if not yet saved
 
   @mauModel("Mau:Test:AttributeAnnotationTest", true)
   @sprayJson
