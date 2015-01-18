@@ -144,5 +144,5 @@ private[mauannotation] trait MauRepositoryCreator {
   }
 
   def createRepositoryVal(deconstructedMauModelClass: DeconstructedMauModelClass) =
-    q"val mauRepository = new MauRepository(mauDatabase)"
+    q"val mauRepo = new MauRepository(mauDatabase)"
 }

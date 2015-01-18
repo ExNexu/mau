@@ -44,13 +44,13 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
               $fieldIdName.fold(
                 Future.successful(None: Option[$attributeClassType])
               )(
-                $attributeClassTermName.mauRepository.get
+                $attributeClassTermName.mauRepo.get
               )
           """
         else
           q"""
             lazy val $fieldName: Future[Option[$attributeClassType]] =
-              $attributeClassTermName.mauRepository.get($fieldIdName)
+              $attributeClassTermName.mauRepo.get($fieldIdName)
           """
       }
     q"""

@@ -9,7 +9,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
 
   describe("@mauModel annotation") {
     it("should allow to save, get and delete") {
-      val personMauRepo = Person.mauRepository
+      val personMauRepo = Person.mauRepo
       val person = Person(None, "Hans", 27)
       val savedPerson = await(personMauRepo.save(person))
       savedPerson.id should be('defined)
@@ -30,7 +30,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
 
     describe("@indexed field annotation") {
       it("should allow to find by value") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -42,7 +42,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
       }
 
       it("should allow to delete by value") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -53,7 +53,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
       }
 
       it("should allow to count by value") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -64,7 +64,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
 
     describe("@allIndex class annotation") {
       it("should allow to find all instances") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -75,7 +75,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
       }
 
       it("should allow to delete all instances") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -86,7 +86,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
       }
 
       it("should allow to count all instances") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -97,7 +97,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
 
     describe("@compoundIndex class annotation") {
       it("should allow to find by compoundIndex") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -108,7 +108,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
       }
 
       it("should allow to delete by compoundIndex") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get
@@ -119,7 +119,7 @@ class SimpleAnnotationTest extends MauRedisSpec("SimpleAnnotationTest", true) {
       }
 
       it("should allow to count by compoundIndex") {
-        val personMauRepo = Person.mauRepository
+        val personMauRepo = Person.mauRepo
         val person = Person(None, "Hans", 27)
         val savedPerson = await(personMauRepo.save(person))
         val id = savedPerson.id.get

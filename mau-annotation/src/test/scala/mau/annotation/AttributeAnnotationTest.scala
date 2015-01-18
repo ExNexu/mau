@@ -9,7 +9,7 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
 
   describe("@attribute annotation") {
     it("should save and retrieve an attribute") {
-      val personMauRepo = Person.mauRepository
+      val personMauRepo = Person.mauRepo
       val owner = await(personMauRepo.save(Person("Hans")))
       val car = Car("BMW", owner.id.get, None)
       val retrievedOwner = await(car.owner)
@@ -17,7 +17,7 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     }
 
     it("should save and retrieve an optional attribute") {
-      val personMauRepo = Person.mauRepository
+      val personMauRepo = Person.mauRepo
       val owner = await(personMauRepo.save(Person("Hans")))
       val secondOwner = await(personMauRepo.save(Person("Peter")))
       val car = Car("BMW", owner.id.get, Some(secondOwner.id.get))
@@ -26,10 +26,10 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     }
 
     it("should be able to be indexed") {
-      val personMauRepo = Person.mauRepository
+      val personMauRepo = Person.mauRepo
       val owner = await(personMauRepo.save(Person("Hans")))
       val car = Car("BMW", owner.id.get, None)
-      val carMauRepo = Car.mauRepository
+      val carMauRepo = Car.mauRepo
       val savedCar = await(carMauRepo.save(car))
       val retrievedCar = await(carMauRepo.findByOwnerId(owner.id.get))
       retrievedCar should be(List(savedCar))
