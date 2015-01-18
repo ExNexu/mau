@@ -2,7 +2,7 @@ package mau.mauannotation
 
 import scala.reflect.macros._
 
-private[mauannotation] trait ClassDeconstructor {
+private[mauannotation] trait ClassDeconstructor extends MacroHelper {
   self: MacroImpl ⇒
 
   val c: blackbox.Context
@@ -56,7 +56,6 @@ private[mauannotation] trait ClassDeconstructor {
         case q"$mods val $tname: $tpt = $expr" if tname.toString == fieldName ⇒ q"val $tname: $tpt = $expr"
       }.get
 
-    private def treeToString(tree: Tree) = s"$tree".replaceAll("\"", "") // TODO: meh
   }
 
   object DeconstructedMauModelClass {

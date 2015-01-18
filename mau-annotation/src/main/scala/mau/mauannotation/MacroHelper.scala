@@ -7,4 +7,6 @@ private[mauannotation] trait MacroHelper {
   import c.universe._
 
   val emptyQQuote = q""
+
+  def treeToString(tree: Tree) = s"$tree".replaceAll("\"", "") // TODO: meh
 }

@@ -6,6 +6,8 @@ import scala.reflect.macros._
 
 class indexed extends StaticAnnotation
 
+class attribute(className: String) extends StaticAnnotation
+
 class allIndex extends StaticAnnotation
 
 class sprayJson extends StaticAnnotation

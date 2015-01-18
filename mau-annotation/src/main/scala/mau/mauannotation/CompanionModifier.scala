@@ -85,22 +85,24 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
       val sprayJsonFormat = createSprayJsonFormat(deconstructedMauModelClass)
       q"""
         ..$sprayJsonFormat
-        private val mauSerializer = jsonWriterToMauSerializer(jsonFormat)
-        private val mauDeSerializer = jsonReaderToMauDeSerializer(jsonFormat)
+        private val mauSerializer = jsonWriterToMauSerializer(sprayJsonFormat)
+        private val mauDeSerializer = jsonReaderToMauDeSerializer(sprayJsonFormat)
       """
     } else
       emptyQQuote
 
   def createSprayJsonFormat(deconstructedMauModelClass: DeconstructedMauModelClass) = {
-    val fieldsLength = deconstructedMauModelClass.fields.length
+    val fields = deconstructedMauModelClass.fields
     val className = deconstructedMauModelClass.className
-    fieldsLength match {
+    val classTermName = deconstructedMauModelClass.className.toTermName
+    fields.length match {
       case 0 ⇒ c.abort(c.enclosingPosition, "Cannot create json formatter for case class with no fields")
       case _ ⇒ {
-        val applyMethod = q"${className.toTermName}.apply"
-        val jsonFormatMethodName = TermName(s"jsonFormat$fieldsLength")
-        val jsonFormatMethod = q"$jsonFormatMethodName($applyMethod)"
-        q"implicit val jsonFormat = $jsonFormatMethod"
+        val fieldNames =
+          fields.map(field ⇒ Literal(Constant(field.name.toString)))
+        val applyMethod = q"$classTermName.apply"
+        val jsonFormatMethod = q"jsonFormat($applyMethod, ..$fieldNames)"
+        q"implicit val sprayJsonFormat: JsonFormat[$className] = $jsonFormatMethod"
       }
     }
   }
