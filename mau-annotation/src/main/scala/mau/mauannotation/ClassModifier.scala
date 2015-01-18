@@ -1,6 +1,7 @@
 package mau.mauannotation
 
 import scala.reflect.macros._
+import scala.reflect.macros._
 
 private[mauannotation] trait ClassModifier extends MacroHelper {
   self: MacroImpl ⇒
@@ -36,10 +37,21 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
         val attributeClassTermName = attributeClassType.toTermName
         val fieldIdName = attributeField.fieldIdName
         val fieldName = attributeField.fieldName
-        q"""
-          lazy val $fieldName: Future[Option[$attributeClassType]] =
-            $attributeClassTermName.mauRepository.get($fieldIdName)
-        """
+        val isOptional = attributeField.isOptional
+        if (isOptional)
+          q"""
+            lazy val $fieldName: Future[Option[$attributeClassType]] =
+              $fieldIdName.fold(
+                Future.successful(None: Option[$attributeClassType])
+              )(
+                $attributeClassTermName.mauRepository.get
+              )
+          """
+        else
+          q"""
+            lazy val $fieldName: Future[Option[$attributeClassType]] =
+              $attributeClassTermName.mauRepository.get($fieldIdName)
+          """
       }
     q"""
       $additionalImports
@@ -66,8 +78,21 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
         case _ ⇒
           throw new Exception(s"@attribute field [$fieldIdName]'s name must end with Id!")
       }
-    val fieldType = field.tpt.asInstanceOf[Ident]
-    if (fieldType.name.asInstanceOf[TypeName] != TypeName("Id"))
-      throw new Exception(s"@attribute field [$fieldIdName] must be of type Id!")
+    val isOptional = {
+      val unsupportedTypeException = new Exception(s"@attribute field [$fieldIdName] must be of type Id or Option[Id]!")
+      field.tpt match {
+        case typeTree: AppliedTypeTree ⇒
+          if (!typeTree.equalsStructure(tq"Option[Id]"))
+            throw unsupportedTypeException
+          true
+        case fieldType: Ident ⇒
+          val fieldTypeName = fieldType.name.asInstanceOf[TypeName]
+          if (fieldTypeName != TypeName("Id"))
+            throw unsupportedTypeException
+          false
+        case _ ⇒
+          throw unsupportedTypeException
+      }
+    }
   }
 }

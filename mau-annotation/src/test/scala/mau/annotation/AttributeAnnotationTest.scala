@@ -11,9 +11,18 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     it("should save and retrieve an attribute") {
       val personMauRepo = Person.mauRepository
       val owner = await(personMauRepo.save(Person("Hans")))
-      val car = Car("BMW", owner.id.get)
+      val car = Car("BMW", owner.id.get, None)
       val retrievedOwner = await(car.owner)
       retrievedOwner should be(Some(owner))
+    }
+
+    it("should save and retrieve an optional attribute") {
+      val personMauRepo = Person.mauRepository
+      val owner = await(personMauRepo.save(Person("Hans")))
+      val secondOwner = await(personMauRepo.save(Person("Peter")))
+      val car = Car("BMW", owner.id.get, Some(secondOwner.id.get))
+      val retrievedSecondOwner = await(car.secondOwner)
+      retrievedSecondOwner should be(Some(secondOwner))
     }
   }
 
@@ -22,13 +31,10 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
   case class Car(
     id: Option[Id],
     name: String,
-    @attribute("Person") ownerId: Id)
-  // Id ending is required, Person needs to be a MauModel, automatically indexed!?
-  // @attribute("Person") secondOwner: Option[Id] // just standard option support
+    @attribute("Person") ownerId: Id,
+    @attribute("Person") secondOwnerId: Option[Id])
+  // Person needs to be a MauModel, automatically indexed!?
   // need constructor with (name, person) // returns Future[Car], saves person if not yet saved
-  // lazy val owner: Future[Option[Person]]
-  // if non-lazy: val owner: Option[Person]
-  // if it's option, it's also just option
 
   @mauModel("Mau:Test:AttributeAnnotationTest", true)
   @sprayJson
