@@ -48,7 +48,7 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     }
   }
 
-  @mauModel("Mau:Test:AttributeAnnotationTest", true)
+  @mauModel("Mau:Test:AttributeAnnotationTest", false)
   @sprayJson
   case class Car(
     id: Option[Id],
@@ -58,7 +58,7 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     @attribute("Person") secondOwnerId: Option[Id],
     @attribute("Person") previousOwnersId: List[Id])
 
-  @mauModel("Mau:Test:AttributeAnnotationTest", true)
+  @mauModel("Mau:Test:AttributeAnnotationTest", false)
   @sprayJson
   case class Person(
     id: Option[Id],

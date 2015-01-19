@@ -21,7 +21,7 @@ class ComplexAnnotationTest extends MauRedisSpec("ComplexAnnotationTest", true) 
     }
   }
 
-  @mauModel("Mau:Test:ComplexAnnotationTest", true)
+  @mauModel("Mau:Test:ComplexAnnotationTest", false)
   @sprayJson
   case class Person(
     id: Option[Id],
