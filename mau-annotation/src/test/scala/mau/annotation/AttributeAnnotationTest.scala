@@ -11,7 +11,7 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     it("should save and retrieve an attribute") {
       val personMauRepo = Person.mauRepo
       val owner = await(personMauRepo.save(Person("Hans")))
-      val car = Car("BMW", owner.id.get, None)
+      val car = Car("BMW", owner.id.get, None, Nil)
       val retrievedOwner = await(car.owner)
       retrievedOwner should be(Some(owner))
     }
@@ -20,15 +20,27 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
       val personMauRepo = Person.mauRepo
       val owner = await(personMauRepo.save(Person("Hans")))
       val secondOwner = await(personMauRepo.save(Person("Peter")))
-      val car = Car("BMW", owner.id.get, Some(secondOwner.id.get))
+      val car = Car("BMW", owner.id.get, Some(secondOwner.id.get), Nil)
       val retrievedSecondOwner = await(car.secondOwner)
       retrievedSecondOwner should be(Some(secondOwner))
+    }
+
+    it("should save and retrieve a list attribute") {
+      val personMauRepo = Person.mauRepo
+      val owner = await(personMauRepo.save(Person("Hans")))
+      val previousOwner1 = await(personMauRepo.save(Person("Peter")))
+      val previousOwner2 = await(personMauRepo.save(Person("Sonja")))
+      val previousOwners = List(previousOwner1, previousOwner2)
+      val previousOwnerIds = previousOwners map (_.id.get)
+      val car = Car("BMW", owner.id.get, None, previousOwnerIds)
+      val retrievedPreviousOwners = await(car.previousOwners)
+      retrievedPreviousOwners should be(previousOwners)
     }
 
     it("should be able to be indexed") {
       val personMauRepo = Person.mauRepo
       val owner = await(personMauRepo.save(Person("Hans")))
-      val car = Car("BMW", owner.id.get, None)
+      val car = Car("BMW", owner.id.get, None, Nil)
       val carMauRepo = Car.mauRepo
       val savedCar = await(carMauRepo.save(car))
       val retrievedCar = await(carMauRepo.findByOwnerId(owner.id.get))
@@ -43,7 +55,8 @@ class AttributeAnnotationTest extends MauRedisSpec("AttributeAnnotationTest", tr
     name: String,
     //@attribute("Person")@indexed ownerId: Id,
     @indexed @attribute("Person") ownerId: Id,
-    @attribute("Person") secondOwnerId: Option[Id])
+    @attribute("Person") secondOwnerId: Option[Id],
+    @attribute("Person") previousOwnersId: List[Id])
 
   @mauModel("Mau:Test:AttributeAnnotationTest", true)
   @sprayJson

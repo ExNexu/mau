@@ -37,6 +37,7 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
         val fieldIdName = attributeField.fieldIdName
         val fieldName = attributeField.fieldName
         val isOptional = attributeField.isOptional
+        val isList = attributeField.isList
         if (isOptional)
           q"""
             lazy val $fieldName: Future[Option[$attributeClassType]] =
@@ -45,6 +46,11 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
               )(
                 $attributeClassTermName.mauRepo.get
               )
+          """
+        else if (isList)
+          q"""
+            lazy val $fieldName: Future[List[$attributeClassType]] =
+              $attributeClassTermName.mauRepo.get($fieldIdName).map(_.toList)
           """
         else
           q"""
@@ -75,18 +81,22 @@ private[mauannotation] trait ClassModifier extends MacroHelper {
         case _ ⇒
           throw new Exception(s"@attribute field [$fieldIdName]'s name must end with Id!")
       }
-    val isOptional = {
-      val unsupportedTypeException = new Exception(s"@attribute field [$fieldIdName] must be of type Id or Option[Id]!")
+    val (isOptional, isList) = {
+      val unsupportedTypeException =
+        new Exception(s"@attribute field [$fieldIdName] must be of type Id, Option[Id] or List[Id]!")
       field.tpt match {
         case typeTree: AppliedTypeTree ⇒
-          if (!typeTree.equalsStructure(tq"Option[Id]"))
+          if (typeTree.equalsStructure(tq"Option[Id]"))
+            (true, false)
+          else if (typeTree.equalsStructure(tq"List[Id]"))
+            (false, true)
+          else
             throw unsupportedTypeException
-          true
         case fieldType: Ident ⇒
           val fieldTypeName = fieldType.name.asInstanceOf[TypeName]
           if (fieldTypeName != TypeName("Id"))
             throw unsupportedTypeException
-          false
+          (false, false)
         case _ ⇒
           throw unsupportedTypeException
       }
