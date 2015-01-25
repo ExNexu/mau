@@ -26,7 +26,7 @@ object Build extends Build {
   lazy val mauTest = Project("mau-test", file("mau-test"))
     .settings(mauModuleSettings: _*)
     .settings(libraryDependencies ++=
-      compile(redisScala, scalaTest)
+      compile(redisScala, riakScala, scalaTest)
     )
 
   lazy val mauCore = Project("mau-core", file("mau-core"))
@@ -46,6 +46,17 @@ object Build extends Build {
     .settings(mauModuleSettings: _*)
     .settings(libraryDependencies ++=
       compile(redisScala)
+    )
+
+  lazy val mauRiak = Project("mau-riak", file("mau-riak"))
+    .dependsOn(
+      mauCore,
+      mauTest % "test",
+      mauSprayJson % "test"
+    )
+    .settings(mauModuleSettings: _*)
+    .settings(libraryDependencies ++=
+      compile(riakScala)
     )
 
   lazy val mauSprayJson = Project("mau-spray-json", file("mau-spray-json"))
