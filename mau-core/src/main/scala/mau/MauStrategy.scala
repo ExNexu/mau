@@ -11,16 +11,16 @@ trait MauStrategy[A <: Model[A]] {
 }
 
 trait ModifiableMauStrategy[A <: Model[A]] extends MauStrategy[A] {
-  private var keyMethods: Set[KeyMethod[A]] = Set.empty
+  private var keyFunctions: Set[KeyFunction[A]] = Set.empty
 
   override def getKeys(obj: A): Set[Key] =
-    keyMethods flatMap (_(obj))
+    keyFunctions flatMap (_(obj))
 
-  def addKeymethod(keyMethod: KeyMethod[A]) {
-    keyMethods = keyMethods + keyMethod
+  def addKeyFunction(keyfun: KeyFunction[A]) {
+    keyFunctions = keyFunctions + keyfun
   }
 
-  def addKeymethods(newKeyMethods: Iterable[KeyMethod[A]]) {
-    keyMethods = keyMethods ++ newKeyMethods
+  def addKeyFunctions(newKeyFuns: Iterable[KeyFunction[A]]) {
+    keyFunctions = keyFunctions ++ newKeyFuns
   }
 }

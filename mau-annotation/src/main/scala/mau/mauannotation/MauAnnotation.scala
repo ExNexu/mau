@@ -4,11 +4,20 @@ import scala.annotation.StaticAnnotation
 import scala.language.experimental.macros
 import scala.reflect.macros._
 
+import mau._
+
 class indexed extends StaticAnnotation
 
 class attribute(className: String) extends StaticAnnotation
 
 class allIndex extends StaticAnnotation
+
+class customIndex(indexName: String) extends StaticAnnotation
+
+case class CustomIndexDeclaration[A, B](
+  keySaveFunction: KeyFunction[A],
+  keyGetFunction: KeyFunction[B],
+  getFilterFunction: Option[FilterFunction[A]] = None)
 
 class sprayJson extends StaticAnnotation
 

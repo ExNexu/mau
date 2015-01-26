@@ -6,7 +6,8 @@ private[mauannotation] abstract class MacroImpl
   extends ClassDeconstructor
   with ClassModifier
   with CompanionModifier
-  with MauRepositoryCreator {
+  with MauRepositoryCreator
+  with CustomIndexMethodCreator {
 
   val c: blackbox.Context
   import c.universe._

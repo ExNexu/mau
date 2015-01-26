@@ -8,6 +8,8 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
   val c: blackbox.Context
   import c.universe._
 
+  val allKey = Constant("all")
+
   def createCompanionImports(sprayJson: Boolean) = {
     val sprayJsonImports =
       if (sprayJson)
@@ -25,20 +27,22 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
 
       import akka.actor.ActorSystem
       import redis.RedisClient
+      import scala.concurrent.Future
     """
   }
 
-  val allKey = Constant("all")
-
   def modifyCompanion(classDecl: ClassDef, compDeclOpt: Option[ModuleDef]) = {
+    val customIndexInfos = getCustomIndexInfos(compDeclOpt)
+    val customIndexKeyFunctions = customIndexInfos.map(_.keyFunction)
+    val customIndexMethods = customIndexInfos.flatMap(_.indexMethods)
     val deconstructedMauModelClass = DeconstructedMauModelClass(classDecl)
     val className = deconstructedMauModelClass.className
     val hasSprayJson = deconstructedMauModelClass.hasSprayJson
     val additionalCompanionImports = createCompanionImports(hasSprayJson)
     val convenientApplyMethod = createConvenientApplyMethod(deconstructedMauModelClass)
     val mauSerialization = createMauSerialization(deconstructedMauModelClass)
-    val mauStrategy = createMauStrategy(deconstructedMauModelClass)
-    val repositoryClass = createRepositoryClass(deconstructedMauModelClass)
+    val mauStrategy = createMauStrategy(deconstructedMauModelClass, customIndexKeyFunctions)
+    val repositoryClass = createRepositoryClass(deconstructedMauModelClass, customIndexMethods)
     val mauDatabase = createMauDatabase(deconstructedMauModelClass, mauInfo)
     val repositoryVal = createRepositoryVal(deconstructedMauModelClass)
     val companionBodyAddition =
@@ -107,23 +111,24 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
     }
   }
 
-  def createMauStrategy(deconstructedMauModelClass: DeconstructedMauModelClass) = {
+  def createMauStrategy(deconstructedMauModelClass: DeconstructedMauModelClass, customIndexKeyFunctions: List[Function]) = {
     val className = deconstructedMauModelClass.className
     val typeName = Constant(className.toString)
     val indexedFields = deconstructedMauModelClass.indexedFields
-    val indexedFieldKeyMethods = indexedFields map (getKeyMethodForIndexedField(_, className))
-    val allIndexKeyMethod = getKeyMethodForAllIndex(deconstructedMauModelClass)
-    val compoundIndexKeyMethods = getKeyMethodsForCompoundIndexes(deconstructedMauModelClass)
-    val keyMethods = allIndexKeyMethod.toSet ++ compoundIndexKeyMethods ++ indexedFieldKeyMethods
+    val indexedFieldKeyFunctions = indexedFields map (getKeyFunctionForIndexedField(_, className))
+    val allIndexKeyFunction = getKeyFunctionForAllIndex(deconstructedMauModelClass)
+    val compoundIndexKeyFunctions = getKeyFunctionsForCompoundIndexes(deconstructedMauModelClass)
+    val keyFunctions = allIndexKeyFunction.toSet ++ compoundIndexKeyFunctions ++ indexedFieldKeyFunctions
     q"""
       private object mauStrategy extends ModifiableMauStrategy[$className] {
         override val typeName = $typeName
-        addKeymethods($keyMethods)
+        addKeyFunctions($keyFunctions)
+        addKeyFunctions($customIndexKeyFunctions)
       }
     """
   }
 
-  def getKeyMethodForIndexedField(field: ValDef, className: TypeName) = {
+  def getKeyFunctionForIndexedField(field: ValDef, className: TypeName) = {
     val fieldName = field.name
     val keyForIndexedField = getKeyForIndexedField(fieldName, q"obj.$fieldName")
     q"(obj: $className) ⇒ Set($keyForIndexedField)"
@@ -136,7 +141,7 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
     """
   }
 
-  def getKeyMethodForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass) =
+  def getKeyFunctionForAllIndex(deconstructedMauModelClass: DeconstructedMauModelClass) =
     if (deconstructedMauModelClass.hasAllIndex) {
       val className = deconstructedMauModelClass.className
       Some(q"(obj: $className) ⇒ Set($allKey)")
@@ -152,7 +157,7 @@ private[mauannotation] trait CompanionModifier extends MacroHelper {
     q"""$keys.mkString(":")"""
   }
 
-  def getKeyMethodsForCompoundIndexes(deconstructedMauModelClass: DeconstructedMauModelClass) =
+  def getKeyFunctionsForCompoundIndexes(deconstructedMauModelClass: DeconstructedMauModelClass) =
     deconstructedMauModelClass.compoundIndexes map { compoundIndex ⇒
       val className = deconstructedMauModelClass.className
       val fields = compoundIndex.fields
