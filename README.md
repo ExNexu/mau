@@ -3,7 +3,7 @@ mau
 
 _This is something I was working on but unfortunately lost the time to complete it. However the proof of concept works and it contains some interesting code working with Scala macros._
 
-*mau is a framework for using key-value databases in Scala. It leverages Scala macros and default behavior to achieve more with less code.*
+**mau is a framework for using key-value databases in Scala. It leverages Scala macros and default behavior to achieve more with less code.**
 
 In the proof of concept I attached it for locally running redis and riak with spray-json. In the following I show some example code taken out of the test suite to show its capabilites. All test examples shown are taken from [here](https://github.com/ExNexu/mau/tree/master/mau-annotation/src/test/scala/mau/annotation).
 
